@@ -637,7 +637,7 @@ function ChatPage({ trades, holdings }) {
     'Summarize my trading performance this week',
     'What patterns do you see in my losing trades?',
     'How does the RBI policy affect my HDFC Bank?',
-    'What's my most consistent setup?',
+   "What's my most consistent setup?",,
   ]
 
   const send = async (msg) => {
