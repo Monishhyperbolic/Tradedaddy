@@ -1,0 +1,17 @@
+{
+  "name": "tradedaddy-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute tradedaddy-db --file=./schema.sql",
+    "db:init:local": "wrangler d1 execute tradedaddy-db --local --file=./schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.4.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.60.0"
+  }
+}
