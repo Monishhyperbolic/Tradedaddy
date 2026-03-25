@@ -1,0 +1,45 @@
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+   padding: 0;
+  background: #000;
+}
+.slide-fill-btn {
+  position: relative;
+  z-index: 1;
+  padding: 18px 52px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 2px solid #ffffff;
+  border-radius: 16px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: color 0.35s ease;
+}
+
+.slide-fill-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  z-index: 0;
+}
+
+.slide-fill-btn:hover {
+  color: #000000;
+}
+
+.slide-fill-btn:hover::before {
+  transform: translateX(0);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 120px;
+}
