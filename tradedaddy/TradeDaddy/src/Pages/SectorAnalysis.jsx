@@ -4,7 +4,7 @@
  * HuggingFace for AI analysis
  */
 import { useState, useEffect, useCallback } from 'react'
-import { getQuote } from '../utils/api'
+import { getQuote, hfChat } from '../utils/api'
 
 const C = { s:'rgba(255,255,255,0.03)', b:'rgba(255,255,255,0.07)', p:'#5227FF', g:'#34C77B', r:'#FF5C5C', a:'#F59E0B', m:'rgba(255,255,255,0.4)', f:'rgba(255,255,255,0.06)' }
 
@@ -35,26 +35,17 @@ const SECTORS = [
     stocks:[{s:'TATASTEEL.NS',n:'Tata Steel'},{s:'JSWSTEEL.NS',n:'JSW Steel'},{s:'HINDALCO.NS',n:'Hindalco'},{s:'VEDL.NS',n:'Vedanta'},{s:'SAIL.NS',n:'SAIL'},{s:'NMDC.NS',n:'NMDC'}] },
 ]
 
-// HuggingFace Inference API — free tier
-const HF_API = 'https://router.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3'
-// Set your HF token in localStorage: localStorage.setItem('hf_token', 'hf_xxx...')
-
+// HuggingFace via Worker proxy (no CORS issues)
 async function hfAnalyze(prompt) {
-  const token = localStorage.getItem('hf_token') || ''
-  const headers = { 'Content-Type':'application/json', ...(token?{Authorization:`Bearer ${token}`}:{}) }
   try {
-    const res = await fetch(HF_API, {
-      method:'POST', headers,
-      body: JSON.stringify({
-        inputs: `<s>[INST] You are an expert Indian stock market analyst. ${prompt} Give a concise 3-sentence analysis with specific action recommendation. [/INST]`,
-        parameters: { max_new_tokens:200, temperature:0.7, return_full_text:false }
-      })
-    })
-    if (!res.ok) throw new Error(`HF API ${res.status}`)
-    const data = await res.json()
-    return (data[0]?.generated_text || 'Analysis unavailable.').trim()
+    const fullPrompt = `<s>[INST] You are an expert Indian stock market analyst. ${prompt} Give a concise 3-sentence analysis with a specific BUY/HOLD/AVOID recommendation. [/INST]`
+    return await hfChat(fullPrompt)
   } catch(e) {
-    return `AI analysis unavailable. ${token?e.message:'Set your HuggingFace token: open browser console → localStorage.setItem("hf_token", "hf_your_token_here")'}`
+    if (e.message.includes('loading')) return '⏳ ' + e.message
+    const hasToken = !!localStorage.getItem('hf_token')
+    return hasToken
+      ? `AI unavailable: ${e.message}. Try again in 30s.`
+      : `Set your free HuggingFace token above to enable AI analysis.`
   }
 }
 

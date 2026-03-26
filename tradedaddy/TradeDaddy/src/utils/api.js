@@ -87,6 +87,24 @@ export const getWatchlist        = ()       => req('/api/watchlist')
 export const addToWatchlist      = (symbol) => req('/api/watchlist', { method:'POST', body:JSON.stringify({symbol}) })
 export const removeFromWatchlist = (id)     => req(`/api/watchlist/${id}`, { method:'DELETE' })
 
+
+/* ── HuggingFace (proxied through Worker to avoid CORS) ── */
+export const hfChat = async (prompt, userToken) => {
+  const token = userToken || localStorage.getItem('hf_token') || ''
+  const res = await fetch(`${BASE}/api/hf/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, token, model: 'mistralai/Mistral-7B-Instruct-v0.2' }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error || `HF proxy error ${res.status}`)
+  }
+  const data = await res.json()
+  if (data.loading) throw new Error(data.text) // re-throw loading message
+  return data.text || 'No response generated.'
+}
+
 /* ── Legacy api object (backward compat) ── */
 export const api = {
   signup, login, me: getMe,
@@ -97,6 +115,7 @@ export const api = {
   connectDhan, getDhanHoldings, getDhanPositions, getDhanTrades, getDhanStatus, disconnectDhan,
   getMt5Positions, getMt5Status,
   getWatchlist, addToWatchlist, removeFromWatchlist,
+  hfChat,
 }
 
 export const auth = {

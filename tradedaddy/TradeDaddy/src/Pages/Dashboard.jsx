@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { hfChat } from '../utils/api'
 import {
   getTrades, createTrade, updateTrade, deleteTrade,
   getHoldings, createHolding, deleteHolding, clearHoldings,
@@ -425,20 +426,11 @@ function ChatPage({ trades, holdings }) {
     const text=msg||input.trim();if(!text)return
     setInput('');setMessages(p=>[...p,{role:'user',text}]);setLoading(true)
     try{
-      const hfToken=localStorage.getItem('hf_token')||''
       const ctx=`Holdings:${JSON.stringify(holdings.slice(0,8))}. Trades(last 15):${JSON.stringify(trades.slice(0,15).map(t=>({sym:t.symbol,type:t.type,pnl:t.pnl,discipline:t.discipline,setup:t.setup})))}. Total PnL:₹${trades.reduce((s,t)=>s+(t.pnl||0),0).toFixed(0)}, WinRate:${trades.length>0?Math.round(trades.filter(t=>t.pnl>0).length/trades.length*100):0}%`
-      const res=await fetch('https://router.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',{
-        method:'POST',
-        headers:{'Content-Type':'application/json',...(hfToken?{Authorization:`Bearer ${hfToken}`}:{})},
-        body:JSON.stringify({
-          inputs:`<s>[INST] You are TradeDaddy AI, an expert Indian stock market assistant. Portfolio context: ${ctx}\n\nUser: ${text}\n\nGive a concise, actionable answer referencing specific trades/holdings when relevant. [/INST]`,
-          parameters:{max_new_tokens:300,temperature:0.7,return_full_text:false}
-        })
-      })
-      const data=await res.json()
-      const reply=data[0]?.generated_text||data?.error||'Could not get response. Make sure your HF token is set.'
-      setMessages(p=>[...p,{role:'assistant',text:reply.trim()}])
-    }catch(e){setMessages(p=>[...p,{role:'assistant',text:`Error: ${e.message}`}])}
+      const prompt=`<s>[INST] You are TradeDaddy AI, an expert Indian stock market assistant. Portfolio context: ${ctx}\n\nUser: ${text}\n\nGive a concise, actionable answer referencing specific trades/holdings when relevant. [/INST]`
+      const reply = await hfChat(prompt)
+      setMessages(p=>[...p,{role:'assistant',text:reply}])
+    }catch(e){setMessages(p=>[...p,{role:'assistant',text:e.message.includes('loading')?e.message:`Error: ${e.message}. Make sure HuggingFace token is set in Sectors page.`}])}
     finally{setLoading(false);setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:'smooth'}),100)}
   }
 
