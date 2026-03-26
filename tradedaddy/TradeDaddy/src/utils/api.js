@@ -89,20 +89,18 @@ export const removeFromWatchlist = (id)     => req(`/api/watchlist/${id}`, { met
 
 
 /* ── HuggingFace (proxied through Worker to avoid CORS) ── */
-export const hfChat = async (prompt, userToken) => {
-  const token = userToken || localStorage.getItem('hf_token') || ''
-  const res = await fetch(`${BASE}/api/hf/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, token, model: 'mistralai/Mistral-7B-Instruct-v0.2' }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error || `HF proxy error ${res.status}`)
-  }
+export async function hfChat(prompt) {
+  const res = await fetch(
+    'https://tradedaddy-api.monishpatil.workers.dev/api/ai',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    }
+  )
+
   const data = await res.json()
-  if (data.loading) throw new Error(data.text) // re-throw loading message
-  return data.text || 'No response generated.'
+  return data?.[0]?.generated_text || 'No response'
 }
 
 /* ── Legacy api object (backward compat) ── */
