@@ -36,7 +36,7 @@ const SECTORS = [
 ]
 
 // HuggingFace Inference API — free tier
-const HF_API = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3'
+const HF_API = 'https://router.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3'
 // Set your HF token in localStorage: localStorage.setItem('hf_token', 'hf_xxx...')
 
 async function hfAnalyze(prompt) {

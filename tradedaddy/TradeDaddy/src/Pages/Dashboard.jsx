@@ -427,7 +427,7 @@ function ChatPage({ trades, holdings }) {
     try{
       const hfToken=localStorage.getItem('hf_token')||''
       const ctx=`Holdings:${JSON.stringify(holdings.slice(0,8))}. Trades(last 15):${JSON.stringify(trades.slice(0,15).map(t=>({sym:t.symbol,type:t.type,pnl:t.pnl,discipline:t.discipline,setup:t.setup})))}. Total PnL:₹${trades.reduce((s,t)=>s+(t.pnl||0),0).toFixed(0)}, WinRate:${trades.length>0?Math.round(trades.filter(t=>t.pnl>0).length/trades.length*100):0}%`
-      const res=await fetch('https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',{
+      const res=await fetch('https://router.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3',{
         method:'POST',
         headers:{'Content-Type':'application/json',...(hfToken?{Authorization:`Bearer ${hfToken}`}:{})},
         body:JSON.stringify({
