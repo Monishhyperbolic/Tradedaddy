@@ -91,7 +91,7 @@ export const removeFromWatchlist = (id)     => req(`/api/watchlist/${id}`, { met
 /* ── HuggingFace (proxied through Worker to avoid CORS) ── */
 export async function hfChat(prompt) {
   const res = await fetch(
-    'https://tradedaddy-api.monishpatil.workers.dev/api/ai',
+    'https://tradedaddy-api.monishpatil.workers.dev/hf/chat,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -100,7 +100,7 @@ export async function hfChat(prompt) {
   )
 
   const data = await res.json()
-  return data?.[0]?.generated_text || 'No response'
+  return data?.text|| 'No response'
 }
 
 /* ── Legacy api object (backward compat) ── */
