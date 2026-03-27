@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getNews, analyzeNews } from '../api'
+import { getNews, analyzeNews } from '../utils/api.js'
 
+// ─── Styles ───
 const fonts = `@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');`
 
 const C = {
@@ -24,26 +25,30 @@ const CATEGORIES = [
 ]
 
 const SENTIMENT_CFG = {
-BULLISH:  { color: C.g, bg: C.gBg, icon: '🟢' },
-BEARISH:  { color: C.r, bg: C.rBg, icon: '🔴' },
-NEUTRAL:  { color: C.muted, bg: C.mutedBg, icon: '⚪' },
+BULLISH: { color: C.g, bg: C.gBg, icon: '🟢' },
+BEARISH: { color: C.r, bg: C.rBg, icon: '🔴' },
+NEUTRAL: { color: C.muted, bg: C.mutedBg, icon: '⚪' },
 }
 
 function timeAgo(d) {
 if (!d) return ''
 try {
 const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
-return s < 3600 ? `${Math.floor(s / 60)}m ago`
-: s < 86400 ? `${Math.floor(s / 3600)}h ago`
+return s < 3600
+? `${Math.floor(s / 60)}m ago`
+: s < 86400
+? `${Math.floor(s / 3600)}h ago`
 : `${Math.floor(s / 86400)}d ago`
-} catch { return '' }
+} catch {
+return ''
+}
 }
 
 function ImpactBadge({ impact }) {
 const map = {
 HIGH: { c: C.r, bg: C.rBg, i: '⚡' },
 MEDIUM: { c: C.a, bg: C.aBg, i: '◎' },
-LOW: { c: C.g, bg: C.gBg, i: '○' }
+LOW: { c: C.g, bg: C.gBg, i: '○' },
 }
 const cfg = map[impact] || { c: C.muted, bg: C.mutedBg, i: '○' }
 
@@ -67,37 +72,51 @@ const [loading, setLoading] = useState(false)
 const analyze = async () => {
 if (analysis) return
 
+```
 setLoading(true)
 try {
-const res = await analyzeNews(article.title, article.description)
-setAnalysis(res)
+  const res = await analyzeNews(article.title, article.description)
+  setAnalysis(res)
 } catch {
-setAnalysis({ sentiment: 'NEUTRAL', impact: 'LOW', summary: 'Analysis failed' })
+  setAnalysis({
+    sentiment: 'NEUTRAL',
+    impact: 'LOW',
+    summary: 'Analysis failed'
+  })
 }
 setLoading(false)
+```
+
 }
 
 const sent = analysis ? SENTIMENT_CFG[analysis.sentiment] : null
 
 return (
+<div style={{ background: C.card, padding: 16, borderRadius: 12 }}> <h3>{article.title}</h3>
 
-<div style={{ background: C.card, padding: 16, borderRadius: 12 }}>
-<h3>{article.title}</h3>
-<p style={{ color: C.muted }}>{article.description}</p>
+```
+  <p style={{ color: C.muted }}>
+    {article.description}
+  </p>
 
-<button onClick={analyze} disabled={loading}>
-{loading ? 'Loading...' : 'Analyse'}
-</button>
+  <button onClick={analyze} disabled={loading}>
+    {loading ? 'Loading...' : 'Analyse'}
+  </button>
 
-{analysis && (
+  {analysis && (
+    <div style={{ marginTop: 10 }}>
+      <span style={{ color: sent.color }}>
+        {sent.icon} {analysis.sentiment}
+      </span>
 
-<div style={{ marginTop: 10 }}>
-<span style={{ color: sent.color }}>{sent.icon} {analysis.sentiment}</span>
-<ImpactBadge impact={analysis.impact} />
-<p>{analysis.summary}</p>
+      <ImpactBadge impact={analysis.impact} />
+
+      <p>{analysis.summary}</p>
+    </div>
+  )}
 </div>
-)}
-</div>
+```
+
 )
 }
 
@@ -122,24 +141,26 @@ load(cat)
 }, [cat])
 
 return (
+<div style={{ padding: 20, background: C.bg, color: C.fg }}> <h1>News</h1>
 
-<div style={{ padding: 20, background: C.bg, color: C.fg }}>
-<h1>News</h1>
+```
+  <div>
+    {CATEGORIES.map(c => (
+      <button key={c.id} onClick={() => setCat(c.id)}>
+        {c.label}
+      </button>
+    ))}
+  </div>
 
-<div>
-{CATEGORIES.map(c => (
-<button key={c.id} onClick={() => setCat(c.id)}>
-{c.label}
-</button>
-))}
+  {loading ? (
+    <p>Loading...</p>
+  ) : (
+    articles.map((a, i) => (
+      <NewsCard key={i} article={a} />
+    ))
+  )}
 </div>
+```
 
-{loading ? (
-
-<p>Loading...</p>
-) : (
-articles.map((a, i) => <NewsCard key={i} article={a} />)
-)}
-</div>
 )
 }
