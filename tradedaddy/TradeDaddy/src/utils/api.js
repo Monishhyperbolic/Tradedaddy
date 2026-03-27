@@ -88,20 +88,31 @@ export const addToWatchlist      = (symbol) => req('/api/watchlist', { method:'P
 export const removeFromWatchlist = (id)     => req(`/api/watchlist/${id}`, { method:'DELETE' })
 
 
-/* ── HuggingFace (proxied through Worker to avoid CORS) ── */
-export async function hfChat(prompt) {
-  const res = await fetch(
-    'https://tradedaddy-api.monishpatil.workers.dev/hf/chat,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    }
-  )
-
+/* ── Groq AI (proxied through Worker — fast, free tier) ── */
+/* Get free API key at console.groq.com → then: wrangler secret put GROQ_API_KEY */
+export const groqChat = async (messages, system) => {
+  const builtMessages = []
+  if (system) builtMessages.push({ role: 'system', content: system })
+  if (typeof messages === 'string') {
+    builtMessages.push({ role: 'user', content: messages })
+  } else if (Array.isArray(messages)) {
+    builtMessages.push(...messages)
+  }
+  const res = await fetch(`${BASE}/api/ai`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: builtMessages }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(err.error || `AI error ${res.status}`)
+  }
   const data = await res.json()
-  return data?.text|| 'No response'
+  return data.text || 'No response.'
 }
+
+/* Keep hfChat as alias for backward compat */
+export const hfChat = groqChat
 
 /* ── Legacy api object (backward compat) ── */
 export const api = {
@@ -113,7 +124,7 @@ export const api = {
   connectDhan, getDhanHoldings, getDhanPositions, getDhanTrades, getDhanStatus, disconnectDhan,
   getMt5Positions, getMt5Status,
   getWatchlist, addToWatchlist, removeFromWatchlist,
-  hfChat,
+  hfChat, groqChat,
 }
 
 export const auth = {

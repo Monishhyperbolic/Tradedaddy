@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { hfChat } from '../utils/api'
+import { groqChat } from '../utils/api'
 import {
   getTrades, createTrade, updateTrade, deleteTrade,
   getHoldings, createHolding, deleteHolding, clearHoldings,
@@ -427,8 +427,10 @@ function ChatPage({ trades, holdings }) {
     setInput('');setMessages(p=>[...p,{role:'user',text}]);setLoading(true)
     try{
       const ctx=`Holdings:${JSON.stringify(holdings.slice(0,8))}. Trades(last 15):${JSON.stringify(trades.slice(0,15).map(t=>({sym:t.symbol,type:t.type,pnl:t.pnl,discipline:t.discipline,setup:t.setup})))}. Total PnL:₹${trades.reduce((s,t)=>s+(t.pnl||0),0).toFixed(0)}, WinRate:${trades.length>0?Math.round(trades.filter(t=>t.pnl>0).length/trades.length*100):0}%`
-      const prompt=`<s>[INST] You are TradeDaddy AI, an expert Indian stock market assistant. Portfolio context: ${ctx}\n\nUser: ${text}\n\nGive a concise, actionable answer referencing specific trades/holdings when relevant. [/INST]`
-      const reply = await hfChat(prompt)
+      const reply = await groqChat(
+        [{ role: 'user', content: text }],
+        `You are TradeDaddy AI, an expert Indian stock market assistant for Monish. Portfolio context: ${ctx}. Be concise and actionable, reference specific trades/holdings when relevant. Keep answers under 200 words.`
+      )
       setMessages(p=>[...p,{role:'assistant',text:reply}])
     }catch(e){setMessages(p=>[...p,{role:'assistant',text:e.message.includes('loading')?e.message:`Error: ${e.message}. Make sure HuggingFace token is set in Sectors page.`}])}
     finally{setLoading(false);setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:'smooth'}),100)}

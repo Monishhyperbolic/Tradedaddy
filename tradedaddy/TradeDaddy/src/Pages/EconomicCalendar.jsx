@@ -57,7 +57,11 @@ function EventRow({ event }) {
         <td style={{ padding:'11px 14px', textAlign:'right', fontSize:13, color:'rgba(255,255,255,0.7)' }}>{event.forecast||'—'}</td>
         <td style={{ padding:'11px 14px', textAlign:'right', fontSize:13, color:C.m }}>{event.previous||'—'}</td>
         <td style={{ padding:'11px 14px', textAlign:'right', fontSize:13, fontWeight:700 }}>
-          {event.actual ? <span style={{ color:parseFloat(event.actual)>=parseFloat(event.forecast)?C.g:C.r }}>{event.actual}</span> : <span style={{ color:'rgba(255,255,255,0.2)' }}>Pending</span>}
+          {event.isPast
+            ? (event.actual
+                ? <span style={{ color:parseFloat(event.actual)>=parseFloat(event.forecast)?C.g:C.r,fontWeight:700 }}>{event.actual}</span>
+                : <span style={{ color:'rgba(255,255,255,0.3)',fontSize:11 }}>N/A</span>)
+            : <span style={{ color:'rgba(255,255,255,0.2)',fontSize:11 }}>Pending</span>}
         </td>
         <td style={{ padding:'11px 14px' }}>
           <span style={{ padding:'2px 8px', borderRadius:999, fontSize:10, fontWeight:700, textTransform:'uppercase', background:cfg.bg, color:cfg.color, border:`1px solid ${cfg.border}`, whiteSpace:'nowrap' }}>{cfg.label}</span>
