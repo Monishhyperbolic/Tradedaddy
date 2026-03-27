@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getNews, analyzeNews } from '../api' // adjust path if needed
+import { getNews, analyzeNews } from '../api'
 
-// ─── Styles ───
 const fonts = `@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');`
 
 const C = {
@@ -68,40 +67,37 @@ const [loading, setLoading] = useState(false)
 const analyze = async () => {
 if (analysis) return
 
-```
 setLoading(true)
 try {
-  const res = await analyzeNews(article.title, article.description)
-  setAnalysis(res)
+const res = await analyzeNews(article.title, article.description)
+setAnalysis(res)
 } catch {
-  setAnalysis({ sentiment: 'NEUTRAL', impact: 'LOW', summary: 'Analysis failed' })
+setAnalysis({ sentiment: 'NEUTRAL', impact: 'LOW', summary: 'Analysis failed' })
 }
 setLoading(false)
-```
-
 }
 
 const sent = analysis ? SENTIMENT_CFG[analysis.sentiment] : null
 
 return (
-<div style={{ background: C.card, padding: 16, borderRadius: 12 }}> <h3>{article.title}</h3>
+
+<div style={{ background: C.card, padding: 16, borderRadius: 12 }}>
+<h3>{article.title}</h3>
 <p style={{ color: C.muted }}>{article.description}</p>
 
-```
-  <button onClick={analyze} disabled={loading}>
-    {loading ? 'Loading...' : 'Analyse'}
-  </button>
+<button onClick={analyze} disabled={loading}>
+{loading ? 'Loading...' : 'Analyse'}
+</button>
 
-  {analysis && (
-    <div style={{ marginTop: 10 }}>
-      <span style={{ color: sent.color }}>{sent.icon} {analysis.sentiment}</span>
-      <ImpactBadge impact={analysis.impact} />
-      <p>{analysis.summary}</p>
-    </div>
-  )}
+{analysis && (
+
+<div style={{ marginTop: 10 }}>
+<span style={{ color: sent.color }}>{sent.icon} {analysis.sentiment}</span>
+<ImpactBadge impact={analysis.impact} />
+<p>{analysis.summary}</p>
 </div>
-```
-
+)}
+</div>
 )
 }
 
@@ -126,24 +122,24 @@ load(cat)
 }, [cat])
 
 return (
-<div style={{ padding: 20, background: C.bg, color: C.fg }}> <h1>News</h1>
 
-```
-  <div>
-    {CATEGORIES.map(c => (
-      <button key={c.id} onClick={() => setCat(c.id)}>
-        {c.label}
-      </button>
-    ))}
-  </div>
+<div style={{ padding: 20, background: C.bg, color: C.fg }}>
+<h1>News</h1>
 
-  {loading ? (
-    <p>Loading...</p>
-  ) : (
-    articles.map((a, i) => <NewsCard key={i} article={a} />)
-  )}
+<div>
+{CATEGORIES.map(c => (
+<button key={c.id} onClick={() => setCat(c.id)}>
+{c.label}
+</button>
+))}
 </div>
-```
 
+{loading ? (
+
+<p>Loading...</p>
+) : (
+articles.map((a, i) => <NewsCard key={i} article={a} />)
+)}
+</div>
 )
 }
