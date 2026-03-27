@@ -10,19 +10,20 @@ const CATEGORIES = [
   { id: 'earnings', label: '📊 Earnings' },
 ]
 
-const SENTIMENT_CFG: Record<string, { color: string; bg: string; icon: string }> = {
+const SENTIMENT_CFG = {
   BULLISH: { color: 'text-success', bg: 'bg-success/10', icon: '🟢' },
   BEARISH: { color: 'text-destructive', bg: 'bg-destructive/10', icon: '🔴' },
   NEUTRAL: { color: 'text-muted-foreground', bg: 'bg-muted', icon: '⚪' },
 }
 
-function ImpactBadge({ impact }: { impact: string }) {
-  const styles: Record<string, string> = {
+function ImpactBadge({ impact }) {
+  const styles = {
     HIGH: 'text-destructive bg-destructive/10 border-destructive/20',
     MEDIUM: 'text-warning bg-warning/10 border-warning/20',
     LOW: 'text-success bg-success/10 border-success/20',
   }
-  const icons: Record<string, string> = { HIGH: '⚡', MEDIUM: '◎', LOW: '○' }
+  const icons = { HIGH: '⚡', MEDIUM: '◎', LOW: '○' }
+
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[impact] || 'text-muted-foreground bg-muted border-border'}`}>
       {icons[impact] || '○'} {impact} Impact
@@ -44,36 +45,49 @@ function SkeletonCard() {
   )
 }
 
-function NewsCard({ article }: { article: any }) {
-  const [analysis, setAnalysis] = useState<any>(null)
+function NewsCard({ article }) {
+  const [analysis, setAnalysis] = useState(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
-  const analyze = async (e: React.MouseEvent) => {
+  const analyze = async (e) => {
     e.stopPropagation()
     if (analysis) { setExpanded(v => !v); return }
+
     setLoading(true)
     try {
       const result = await analyzeNews(article.title, article.description)
-      setAnalysis(result); setExpanded(true)
+      setAnalysis(result)
+      setExpanded(true)
     } catch {
       setAnalysis({
-        sentiment: 'NEUTRAL', impact: 'LOW', affectedStocks: [], affectedSectors: [],
+        sentiment: 'NEUTRAL',
+        impact: 'LOW',
+        affectedStocks: [],
+        affectedSectors: [],
         summary: 'Analysis unavailable — add ANTHROPIC_API_KEY to worker secrets.',
         timeframe: 'unknown'
       })
       setExpanded(true)
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const sentCfg = analysis ? (SENTIMENT_CFG[analysis.sentiment] || SENTIMENT_CFG.NEUTRAL) : null
 
-  const timeAgo = (d: string) => {
+  const timeAgo = (d) => {
     if (!d) return ''
     try {
       const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
-      return s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`
-    } catch { return '' }
+      return s < 3600
+        ? `${Math.floor(s / 60)}m ago`
+        : s < 86400
+        ? `${Math.floor(s / 3600)}h ago`
+        : `${Math.floor(s / 86400)}d ago`
+    } catch {
+      return ''
+    }
   }
 
   return (
@@ -104,6 +118,7 @@ function NewsCard({ article }: { article: any }) {
           <span className="text-xs text-muted-foreground font-mono">
             {timeAgo(article.pubDate)}
           </span>
+
           <button
             onClick={analyze}
             disabled={loading}
@@ -136,10 +151,12 @@ function NewsCard({ article }: { article: any }) {
           >
             <div className="mt-4 pt-4 border-t border-border space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${sentCfg!.bg} ${sentCfg!.color}`}>
-                  {sentCfg!.icon} {analysis.sentiment}
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${sentCfg?.bg} ${sentCfg?.color}`}>
+                  {sentCfg?.icon} {analysis.sentiment}
                 </span>
+
                 <ImpactBadge impact={analysis.impact} />
+
                 {analysis.timeframe && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs text-muted-foreground bg-muted border border-border">
                     ⏱ {analysis.timeframe}
@@ -156,8 +173,9 @@ function NewsCard({ article }: { article: any }) {
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Affected Stocks
                   </h4>
+
                   <div className="space-y-1.5">
-                    {analysis.affectedStocks.map((s: any, i: number) => (
+                    {analysis.affectedStocks.map((s, i) => (
                       <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 text-sm">
                         <span className={s.direction === 'UP' ? 'text-success' : 'text-destructive'}>
                           {s.direction === 'UP' ? '▲' : '▼'}
@@ -172,7 +190,7 @@ function NewsCard({ article }: { article: any }) {
 
               {analysis.affectedSectors?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {analysis.affectedSectors.map((s: string) => (
+                  {analysis.affectedSectors.map((s) => (
                     <span key={s} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground border border-border">
                       {s}
                     </span>
@@ -189,57 +207,64 @@ function NewsCard({ article }: { article: any }) {
 
 export default function News() {
   const [cat, setCat] = useState('markets')
-  const [articles, setArticles] = useState<any[]>([])
+  const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [ts, setTs] = useState<Date | null>(null)
+  const [error, setError] = useState(null)
+  const [ts, setTs] = useState(null)
 
-  const load = useCallback(async (category: string) => {
-    setLoading(true); setError(null)
+  const load = useCallback(async (category) => {
+    setLoading(true)
+    setError(null)
+
     try {
       const data = await getNews(category)
-      setArticles(data.articles || []); setTs(new Date())
-    } catch (e: any) { setError(e.message) }
-    finally { setLoading(false) }
+      setArticles(data.articles || [])
+      setTs(new Date())
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  useEffect(() => { load(cat) }, [cat])
+  useEffect(() => {
+    load(cat)
+  }, [cat])
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
+
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
               News & Analysis
             </h1>
             <p className="text-sm text-muted-foreground mt-1 font-mono">
-              {articles.length} articles{ts && ` · ${ts.toLocaleTimeString()}`}
+              {articles.length} articles {ts && `· ${ts.toLocaleTimeString()}`}
             </p>
           </div>
+
           <button
             onClick={() => load(cat)}
             disabled={loading}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm
-              bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50
-              transition-all duration-200 shadow-lg shadow-primary/20"
+              bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             <span className={loading ? 'animate-spin' : ''}>⟳</span>
             Refresh
           </button>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {CATEGORIES.map(c => (
             <button
               key={c.id}
               onClick={() => setCat(c.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
+              className={`px-4 py-2 rounded-xl text-sm font-medium
                 ${cat === c.id
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 border border-border'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-muted-foreground'
                 }`}
             >
               {c.label}
@@ -247,34 +272,25 @@ export default function News() {
           ))}
         </div>
 
-        {/* AI Hint */}
-        <div className="glass-surface rounded-xl px-4 py-3 flex items-center gap-3 text-sm">
-          <span className="text-lg">🤖</span>
-          <p className="text-muted-foreground">
-            Click <span className="text-primary font-semibold">Analyse</span> on any article for AI-powered stock impact analysis.
-          </p>
-        </div>
-
-        {/* Error */}
         {error && (
-          <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl px-4 py-3 text-sm font-medium">
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl px-4 py-3 text-sm">
             ⚠ {error}
           </div>
         )}
 
-        {/* Content */}
         {loading ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : articles.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
-            <p className="text-4xl mb-3">📭</p>
-            <p className="font-medium">No articles found. Try refreshing.</p>
+            No articles found
           </div>
         ) : (
           <div className="space-y-3">
-            {articles.map((a, i) => <NewsCard key={i} article={a} />)}
+            {articles.map((a, i) => (
+              <NewsCard key={i} article={a} />
+            ))}
           </div>
         )}
       </div>
