@@ -1,34 +1,55 @@
 import { useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { getNews, analyzeNews } from '../utils/api'
 
-const C = { s:'rgba(255,255,255,0.03)', b:'rgba(255,255,255,0.07)', p:'#5227FF', g:'#34C77B', r:'#FF5C5C', a:'#F59E0B', m:'rgba(255,255,255,0.4)' }
-
 const CATEGORIES = [
-  { id:'markets',     label:'🇮🇳 Markets' },
-  { id:'economy',     label:'🏦 Economy' },
-  { id:'global',      label:'🌏 Global' },
-  { id:'commodities', label:'🛢 Commodities' },
-  { id:'earnings',    label:'📊 Earnings' },
+  { id: 'markets', label: '🇮🇳 Markets' },
+  { id: 'economy', label: '🏦 Economy' },
+  { id: 'global', label: '🌏 Global' },
+  { id: 'commodities', label: '🛢 Commodities' },
+  { id: 'earnings', label: '📊 Earnings' },
 ]
 
-const SENTIMENT_CFG = {
-  BULLISH: { color:'#34C77B', bg:'rgba(52,199,123,0.12)', icon:'🟢' },
-  BEARISH: { color:'#FF5C5C', bg:'rgba(255,92,92,0.12)',  icon:'🔴' },
-  NEUTRAL: { color:'rgba(255,255,255,0.4)', bg:'rgba(255,255,255,0.05)', icon:'⚪' },
+const SENTIMENT_CFG: Record<string, { color: string; bg: string; icon: string }> = {
+  BULLISH: { color: 'text-success', bg: 'bg-success/10', icon: '🟢' },
+  BEARISH: { color: 'text-destructive', bg: 'bg-destructive/10', icon: '🔴' },
+  NEUTRAL: { color: 'text-muted-foreground', bg: 'bg-muted', icon: '⚪' },
 }
 
-function ImpactBadge({ impact }) {
-  const colors = { HIGH:'#FF5C5C', MEDIUM:'#F59E0B', LOW:'#34C77B' }
-  const color = colors[impact] || C.m
-  return <span style={{ padding:'2px 8px', borderRadius:999, fontSize:10, fontWeight:800, letterSpacing:'0.07em', textTransform:'uppercase', background:`${color}18`, color, border:`1px solid ${color}40` }}>{impact==='HIGH'?'⚡':impact==='MEDIUM'?'◎':'○'} {impact} Impact</span>
+function ImpactBadge({ impact }: { impact: string }) {
+  const styles: Record<string, string> = {
+    HIGH: 'text-destructive bg-destructive/10 border-destructive/20',
+    MEDIUM: 'text-warning bg-warning/10 border-warning/20',
+    LOW: 'text-success bg-success/10 border-success/20',
+  }
+  const icons: Record<string, string> = { HIGH: '⚡', MEDIUM: '◎', LOW: '○' }
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[impact] || 'text-muted-foreground bg-muted border-border'}`}>
+      {icons[impact] || '○'} {impact} Impact
+    </span>
+  )
 }
 
-function NewsCard({ article }) {
-  const [analysis, setAnalysis] = useState(null)
-  const [loading,  setLoading]  = useState(false)
+function SkeletonCard() {
+  return (
+    <div className="glass-surface rounded-2xl p-5 space-y-3">
+      <div className="shimmer h-4 w-24 rounded-lg" />
+      <div className="shimmer h-5 w-full rounded-lg" />
+      <div className="shimmer h-4 w-3/4 rounded-lg" />
+      <div className="flex gap-2 pt-2">
+        <div className="shimmer h-8 w-24 rounded-lg" />
+        <div className="shimmer h-8 w-16 rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+function NewsCard({ article }: { article: any }) {
+  const [analysis, setAnalysis] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
-  const analyze = async (e) => {
+  const analyze = async (e: React.MouseEvent) => {
     e.stopPropagation()
     if (analysis) { setExpanded(v => !v); return }
     setLoading(true)
@@ -36,111 +57,227 @@ function NewsCard({ article }) {
       const result = await analyzeNews(article.title, article.description)
       setAnalysis(result); setExpanded(true)
     } catch {
-      setAnalysis({ sentiment:'NEUTRAL', impact:'LOW', affectedStocks:[], affectedSectors:[], summary:'Analysis unavailable — add ANTHROPIC_API_KEY to worker secrets.', timeframe:'unknown' })
+      setAnalysis({
+        sentiment: 'NEUTRAL', impact: 'LOW', affectedStocks: [], affectedSectors: [],
+        summary: 'Analysis unavailable — add ANTHROPIC_API_KEY to worker secrets.',
+        timeframe: 'unknown'
+      })
       setExpanded(true)
     } finally { setLoading(false) }
   }
 
   const sentCfg = analysis ? (SENTIMENT_CFG[analysis.sentiment] || SENTIMENT_CFG.NEUTRAL) : null
-  const timeAgo = (d) => { if(!d) return ''; try { const s=Math.floor((Date.now()-new Date(d))/1000); return s<3600?`${Math.floor(s/60)}m`:s<86400?`${Math.floor(s/3600)}h`:`${Math.floor(s/86400)}d` } catch{return ''} }
+
+  const timeAgo = (d: string) => {
+    if (!d) return ''
+    try {
+      const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000)
+      return s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : `${Math.floor(s / 86400)}d ago`
+    } catch { return '' }
+  }
 
   return (
-    <div style={{ background:C.s, border:`1px solid ${expanded?'rgba(82,39,255,0.3)':C.b}`, borderRadius:16, padding:'16px 18px', transition:'border-color 0.2s' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', gap:14 }}>
-        <div style={{ flex:1 }}>
-          {article.source && <div style={{ fontSize:10, color:C.m, marginBottom:4, textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:600 }}>{article.source}</div>}
-          <a href={article.link} target="_blank" rel="noopener noreferrer"
-            style={{ textDecoration:'none', color:'#fff', fontSize:14, fontWeight:600, lineHeight:1.5, display:'block' }}
-            onMouseEnter={e=>e.target.style.color='#5227FF'} onMouseLeave={e=>e.target.style.color='#fff'}>
-            {article.title}
-          </a>
-          {article.description && <p style={{ margin:'5px 0 0', fontSize:12, color:C.m, lineHeight:1.55 }}>{article.description}</p>}
-        </div>
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, flexShrink:0 }}>
-          <span style={{ fontSize:11, color:'rgba(255,255,255,0.25)' }}>{timeAgo(article.pubDate)}</span>
-          <button onClick={analyze} disabled={loading}
-            style={{ padding:'5px 12px', background:analysis?'rgba(82,39,255,0.15)':C.p, border:`1px solid ${analysis?'rgba(82,39,255,0.3)':'transparent'}`, borderRadius:8, color:'#fff', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit', opacity:loading?0.7:1, whiteSpace:'nowrap' }}>
-            {loading?'🤖 Analysing…':analysis?(expanded?'▲ Hide':'▼ Analysis'):'🤖 Analyse'}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-surface glass-surface-hover rounded-2xl p-5 group"
+    >
+      <div className="space-y-3">
+        {article.source && (
+          <span className="inline-block px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-semibold tracking-wide uppercase">
+            {article.source}
+          </span>
+        )}
+
+        <h3 className="text-foreground font-semibold text-base leading-snug group-hover:text-primary transition-colors duration-200 cursor-pointer">
+          {article.title}
+        </h3>
+
+        {article.description && (
+          <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
+            {article.description}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-xs text-muted-foreground font-mono">
+            {timeAgo(article.pubDate)}
+          </span>
+          <button
+            onClick={analyze}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold
+              bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50
+              transition-all duration-200"
+          >
+            {loading ? (
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                Analysing…
+              </span>
+            ) : analysis ? (
+              expanded ? '▲ Hide' : '▼ Analysis'
+            ) : (
+              '🤖 Analyse'
+            )}
           </button>
         </div>
       </div>
-      {expanded && analysis && (
-        <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.b}` }}>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
-            <span style={{ padding:'3px 10px', borderRadius:999, fontSize:12, fontWeight:700, background:sentCfg.bg, color:sentCfg.color }}>{sentCfg.icon} {analysis.sentiment}</span>
-            <ImpactBadge impact={analysis.impact} />
-            {analysis.timeframe && <span style={{ padding:'3px 10px', borderRadius:999, fontSize:11, background:'rgba(255,255,255,0.05)', color:C.m, border:`1px solid ${C.b}` }}>⏱ {analysis.timeframe}</span>}
-          </div>
-          <p style={{ margin:'0 0 10px', fontSize:13, color:'rgba(255,255,255,0.8)', lineHeight:1.65, padding:'10px 12px', background:sentCfg.bg, borderRadius:10, borderLeft:`3px solid ${sentCfg.color}` }}>{analysis.summary}</p>
-          {analysis.affectedStocks?.length > 0 && (
-            <div style={{ marginBottom:8 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:C.m, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Affected Stocks</div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                {analysis.affectedStocks.map((s,i) => (
-                  <span key={i} style={{ padding:'3px 10px', borderRadius:8, fontSize:12, fontWeight:700, background:s.direction==='UP'?'rgba(52,199,123,0.1)':'rgba(255,92,92,0.1)', color:s.direction==='UP'?C.g:C.r, border:`1px solid ${s.direction==='UP'?'rgba(52,199,123,0.25)':'rgba(255,92,92,0.25)'}` }}>
-                    {s.direction==='UP'?'▲':'▼'} {s.symbol} <span style={{ fontWeight:400, color:C.m }}>— {s.reason}</span>
+
+      <AnimatePresence>
+        {expanded && analysis && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-4 pt-4 border-t border-border space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${sentCfg!.bg} ${sentCfg!.color}`}>
+                  {sentCfg!.icon} {analysis.sentiment}
+                </span>
+                <ImpactBadge impact={analysis.impact} />
+                {analysis.timeframe && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs text-muted-foreground bg-muted border border-border">
+                    ⏱ {analysis.timeframe}
                   </span>
-                ))}
+                )}
               </div>
+
+              <p className="text-sm text-secondary-foreground leading-relaxed">
+                {analysis.summary}
+              </p>
+
+              {analysis.affectedStocks?.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Affected Stocks
+                  </h4>
+                  <div className="space-y-1.5">
+                    {analysis.affectedStocks.map((s: any, i: number) => (
+                      <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 text-sm">
+                        <span className={s.direction === 'UP' ? 'text-success' : 'text-destructive'}>
+                          {s.direction === 'UP' ? '▲' : '▼'}
+                        </span>
+                        <span className="font-semibold font-mono text-foreground">{s.symbol}</span>
+                        <span className="text-muted-foreground">— {s.reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysis.affectedSectors?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {analysis.affectedSectors.map((s: string) => (
+                    <span key={s} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-secondary text-secondary-foreground border border-border">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-          {analysis.affectedSectors?.length > 0 && (
-            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-              {analysis.affectedSectors.map(s => <span key={s} style={{ padding:'2px 10px', background:'rgba(82,39,255,0.12)', border:'1px solid rgba(82,39,255,0.25)', borderRadius:6, fontSize:12, color:'rgba(255,255,255,0.7)' }}>{s}</span>)}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
 
 export default function News() {
-  const [cat,      setCat]      = useState('markets')
-  const [articles, setArticles] = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
-  const [ts,       setTs]       = useState(null)
+  const [cat, setCat] = useState('markets')
+  const [articles, setArticles] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [ts, setTs] = useState<Date | null>(null)
 
-  const load = useCallback(async (category) => {
+  const load = useCallback(async (category: string) => {
     setLoading(true); setError(null)
     try {
       const data = await getNews(category)
       setArticles(data.articles || []); setTs(new Date())
-    } catch(e) { setError(e.message) } finally { setLoading(false) }
+    } catch (e: any) { setError(e.message) }
+    finally { setLoading(false) }
   }, [])
 
   useEffect(() => { load(cat) }, [cat])
 
   return (
-    <div>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:18 }}>
-        <div>
-          <h1 style={{ margin:'0 0 4px', fontSize:22, fontWeight:800 }}>News & Analysis</h1>
-          <p style={{ margin:0, fontSize:13, color:C.m }}>{articles.length} articles{ts && ` · ${ts.toLocaleTimeString()}`}</p>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              News & Analysis
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 font-mono">
+              {articles.length} articles{ts && ` · ${ts.toLocaleTimeString()}`}
+            </p>
+          </div>
+          <button
+            onClick={() => load(cat)}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm
+              bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50
+              transition-all duration-200 shadow-lg shadow-primary/20"
+          >
+            <span className={loading ? 'animate-spin' : ''}>⟳</span>
+            Refresh
+          </button>
         </div>
-        <button onClick={()=>load(cat)} disabled={loading} style={{ padding:'9px 18px', background:loading?'rgba(82,39,255,0.4)':'#5227FF', border:'none', borderRadius:12, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>⟳ Refresh</button>
-      </div>
-      <div style={{ display:'flex', gap:8, marginBottom:18, overflowX:'auto', paddingBottom:4 }}>
-        {CATEGORIES.map(c => (
-          <button key={c.id} onClick={()=>setCat(c.id)} style={{ padding:'8px 16px', border:'none', borderRadius:11, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap', flexShrink:0, background:cat===c.id?'#5227FF':'rgba(255,255,255,0.04)', color:cat===c.id?'#fff':C.m, fontWeight:cat===c.id?700:400, fontSize:13, border:cat===c.id?'none':`1px solid ${C.b}` }}>{c.label}</button>
-        ))}
-      </div>
-      <div style={{ padding:'10px 14px', background:'rgba(82,39,255,0.08)', border:'1px solid rgba(82,39,255,0.2)', borderRadius:12, fontSize:13, color:'rgba(255,255,255,0.65)', marginBottom:18 }}>
-        🤖 Click <strong style={{ color:'#fff' }}>Analyse</strong> on any article for AI-powered stock impact analysis. Requires ANTHROPIC_API_KEY in worker secrets.
-      </div>
-      {error && <div style={{ padding:'12px 14px', background:'rgba(255,92,92,0.08)', border:'1px solid rgba(255,92,92,0.2)', borderRadius:12, color:'#FF5C5C', fontSize:13, marginBottom:14 }}>⚠ {error}</div>}
-      {loading ? (
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {[...Array(5)].map((_,i) => <div key={i} style={{ height:80, background:C.s, borderRadius:14, opacity:0.4 }} />)}
+
+        {/* Category Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {CATEGORIES.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setCat(c.id)}
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200
+                ${cat === c.id
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 border border-border'
+                }`}
+            >
+              {c.label}
+            </button>
+          ))}
         </div>
-      ) : articles.length === 0 ? (
-        <div style={{ textAlign:'center', padding:'60px 0', color:C.m }}>No articles found. Try refreshing.</div>
-      ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {articles.map((a,i) => <NewsCard key={i} article={a} />)}
+
+        {/* AI Hint */}
+        <div className="glass-surface rounded-xl px-4 py-3 flex items-center gap-3 text-sm">
+          <span className="text-lg">🤖</span>
+          <p className="text-muted-foreground">
+            Click <span className="text-primary font-semibold">Analyse</span> on any article for AI-powered stock impact analysis.
+          </p>
         </div>
-      )}
+
+        {/* Error */}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl px-4 py-3 text-sm font-medium">
+            ⚠ {error}
+          </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : articles.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            <p className="text-4xl mb-3">📭</p>
+            <p className="font-medium">No articles found. Try refreshing.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {articles.map((a, i) => <NewsCard key={i} article={a} />)}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
