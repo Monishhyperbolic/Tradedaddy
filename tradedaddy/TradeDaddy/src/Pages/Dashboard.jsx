@@ -528,12 +528,10 @@ function HoldingsPage({ holdings, onRefresh }) {
               <div style={{ fontSize:11,color:T.d }}>
                 {mt5Status?.connected?`${mt5Status.login||''}@${mt5Status.server||''} · Balance: ${mt5Status.currency||'$'}${mt5Status.balance?.toFixed(2)||'—'}`:'Connect in Settings → Brokers'}
               </div>
-            
-            
-          
-        </div>
-            <button onClick={syncMt5} disabled={!!syncing} style={{ padding:'8px 16px',background:syncing==='mt5'?'rgba(46,204,138,0.3)':T.g,border:'none',borderRadius:9,color:'#fff',fontSize:12,fontWeight:700,cursor:syncing?'not-allowed':'pointer',fontFamily:T.font }}>
-              {syncing==='mt5'?'⟳ Syncing…':'⟳ Sync Positions'}
+            </div>
+            <button onClick={syncMt5} disabled={!!syncing||!mt5Status?.connected}
+              style={{ padding:'7px 14px',background:!mt5Status?.connected?'rgba(255,255,255,0.04)':syncing==='mt5'?'rgba(46,204,138,0.3)':T.g,border:`1px solid ${!mt5Status?.connected?T.border:'transparent'}`,borderRadius:10,color:!mt5Status?.connected?T.d:'#fff',fontSize:12,fontWeight:700,cursor:(syncing||!mt5Status?.connected)?'not-allowed':'pointer',fontFamily:T.font }}>
+              {syncing==='mt5'?'Syncing…':'⟳ Sync Positions'}
             </button>
           </div>
         </div>
