@@ -5,6 +5,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { connectMt5, disconnectMt5 } from '../utils/api'
 import {
   getTrades, createTrade, updateTrade, deleteTrade,
   getHoldings, createHolding, deleteHolding, clearHoldings,
@@ -26,216 +27,6 @@ const T = {
   font:"'DM Sans','Space Grotesk',sans-serif", mono:"'JetBrains Mono','Fira Code',monospace",
 }
 
-/* ── MT5 Bridge script generator ── */
-function getMt5BridgeScript() {
-  return `"""
-TradeDaddy MT5 Bridge — run this on your Windows desktop
-Connects to MetaTrader 5 and syncs positions to the Worker every 60 seconds.
-
-SETUP:
-1. pip install MetaTrader5 requests
-2. Fill in your Worker URL and JWT token below
-3. Run: python mt5_bridge.py
-
-Get your JWT token:
-  - Log into TradeDaddy in browser
-  - Open DevTools (F12) → Application → Local Storage → td_token
-  - Copy that value and paste below
-"""
-
-import time
-import json
-import sys
-from datetime import datetime
-
-try:
-    import MetaTrader5 as mt5
-except ImportError:
-    print("ERROR: MetaTrader5 package not installed.")
-    print("Run: pip install MetaTrader5 requests")
-    sys.exit(1)
-
-try:
-    import requests
-except ImportError:
-    print("ERROR: requests package not installed.")
-    print("Run: pip install requests")
-    sys.exit(1)
-
-# ── CONFIG — fill these in ──────────────────────────────────────
-WORKER_URL = "https://tradedaddy-api.monishpatil.workers.dev"
-JWT_TOKEN  = "PASTE_YOUR_JWT_TOKEN_HERE"   # from localStorage → td_token
-
-MT5_LOGIN    = 0          # Your MT5 account number (0 = use currently open terminal)
-MT5_PASSWORD = ""         # Leave empty if terminal is already logged in
-MT5_SERVER   = ""         # Leave empty if terminal is already logged in
-MT5_PATH     = ""         # Leave empty to auto-detect MT5 path
-# ───────────────────────────────────────────────────────────────
-
-SYNC_INTERVAL = 60  # seconds
-
-def init_mt5():
-    """Initialize MT5 connection"""
-    kwargs = {}
-    if MT5_PATH:       kwargs["path"] = MT5_PATH
-    if MT5_LOGIN:      kwargs["login"] = MT5_LOGIN
-    if MT5_PASSWORD:   kwargs["password"] = MT5_PASSWORD
-    if MT5_SERVER:     kwargs["server"] = MT5_SERVER
-
-    if not mt5.initialize(**kwargs):
-        print(f"[{now()}] MT5 init failed: {mt5.last_error()}")
-        return False
-
-    info = mt5.account_info()
-    if info is None:
-        print(f"[{now()}] Could not get account info: {mt5.last_error()}")
-        return False
-
-    print(f"[{now()}] ✅ MT5 connected: Account #{info.login} | {info.name} | {info.server}")
-    print(f"[{now()}]    Balance: {info.currency} {info.balance:,.2f} | Equity: {info.equity:,.2f}")
-    return True
-
-def get_positions():
-    """Get all open positions"""
-    positions = mt5.positions_get()
-    if positions is None:
-        return []
-
-    result = []
-    for pos in positions:
-        # Get current price
-        tick = mt5.symbol_info_tick(pos.symbol)
-        current_price = tick.bid if pos.type == mt5.POSITION_TYPE_BUY else tick.ask if tick else pos.price_current
-
-        result.append({
-            "ticket":       pos.ticket,
-            "symbol":       pos.symbol,
-            "type":         "LONG" if pos.type == mt5.POSITION_TYPE_BUY else "SHORT",
-            "volume":       pos.volume,
-            "openPrice":    pos.price_open,
-            "currentPrice": current_price,
-            "sl":           pos.sl,
-            "tp":           pos.tp,
-            "swap":         pos.swap,
-            "profit":       pos.profit,
-            "comment":      pos.comment,
-            "openTime":     datetime.fromtimestamp(pos.time).isoformat(),
-            "magic":        pos.magic,
-        })
-    return result
-
-def get_account_info():
-    """Get account summary"""
-    info = mt5.account_info()
-    if info is None:
-        return {}
-    return {
-        "login":     info.login,
-        "name":      info.name,
-        "server":    info.server,
-        "currency":  info.currency,
-        "leverage":  info.leverage,
-        "balance":   info.balance,
-        "equity":    info.equity,
-        "margin":    info.margin,
-        "freeMargin":info.margin_free,
-        "marginLevel": info.margin_level,
-        "profit":    info.profit,
-    }
-
-def sync_to_worker(positions, account):
-    """POST positions to Cloudflare Worker"""
-    if JWT_TOKEN == "PASTE_YOUR_JWT_TOKEN_HERE":
-        print(f"[{now()}] ⚠️  JWT token not set. Edit mt5_bridge.py and paste your token.")
-        return False
-
-    payload = {
-        "positions": positions,
-        "account":   account,
-        "balance":   account.get("balance"),
-        "equity":    account.get("equity"),
-        "margin":    account.get("margin"),
-    }
-
-    try:
-        res = requests.post(
-            f"{WORKER_URL}/api/broker/mt5/sync",
-            json=payload,
-            headers={
-                "Authorization": f"Bearer {JWT_TOKEN}",
-                "Content-Type": "application/json"
-            },
-            timeout=10
-        )
-        if res.status_code == 200:
-            data = res.json()
-            print(f"[{now()}] ✅ Synced {data.get('count', 0)} position(s) to TradeDaddy")
-            return True
-        elif res.status_code == 401:
-            print(f"[{now()}] ❌ JWT expired. Get a new token from TradeDaddy app → localStorage → td_token")
-            return False
-        else:
-            print(f"[{now()}] ⚠️  Worker returned {res.status_code}: {res.text[:100]}")
-            return False
-    except requests.exceptions.ConnectionError:
-        print(f"[{now()}] ⚠️  Cannot reach worker. Check internet connection.")
-        return False
-    except Exception as e:
-        print(f"[{now()}] ⚠️  Sync error: {e}")
-        return False
-
-def now():
-    return datetime.now().strftime("%H:%M:%S")
-
-def main():
-    print("=" * 55)
-    print("  TradeDaddy MT5 Bridge")
-    print(f"  Worker: {WORKER_URL}")
-    print(f"  Sync every: {SYNC_INTERVAL}s")
-    print("=" * 55)
-
-    if not init_mt5():
-        print("\\n❌ Could not connect to MT5.")
-        print("Make sure MetaTrader 5 is running and logged in.")
-        sys.exit(1)
-
-    print(f"\\n[{now()}] Starting sync loop... Press Ctrl+C to stop.\\n")
-
-    consecutive_errors = 0
-    while True:
-        try:
-            # Check MT5 still connected
-            if mt5.account_info() is None:
-                print(f"[{now()}] MT5 disconnected. Reconnecting...")
-                if not init_mt5():
-                    time.sleep(30)
-                    continue
-
-            positions = get_positions()
-            account   = get_account_info()
-
-            success = sync_to_worker(positions, account)
-            if success:
-                consecutive_errors = 0
-            else:
-                consecutive_errors += 1
-                if consecutive_errors >= 5:
-                    print(f"[{now()}] Too many errors. Check your JWT token and worker URL.")
-
-            time.sleep(SYNC_INTERVAL)
-
-        except KeyboardInterrupt:
-            print(f"\\n[{now()}] Stopped by user.")
-            mt5.shutdown()
-            break
-        except Exception as e:
-            print(f"[{now()}] Unexpected error: {e}")
-            time.sleep(30)
-
-if __name__ == "__main__":
-    main()
-`
-}
 
 
 const NAV = [
@@ -677,12 +468,20 @@ function HoldingsPage({ holdings, onRefresh }) {
     setSyncing('mt5');setMsg(null)
     try{
       const data=await getMt5Positions()
-      if(!data.connected){setMsg({t:'w',txt:'⚠ MT5 bridge not running. Run mt5_bridge.py on your desktop.'});return}
+      if(!data.connected){setMsg({t:'w',txt:'⚠ MT5 not connected. Go to Settings → Brokers to connect your account.'});return}
       const pos=data.positions||[]
-      if(!pos.length){setMsg({t:'w',txt:'No open MT5 positions.'});return}
-      for(const p of pos){await createHolding({symbol:p.symbol,qty:p.volume,avg_price:p.openPrice,sector:'Forex/Commodity',exchange:'MT5'})}
-      setMsg({t:'ok',txt:`✅ Synced ${pos.length} MT5 position(s)`});onRefresh()
-    }catch(e){setMsg({t:'err',txt:'❌ '+e.message})}
+      if(!pos.length){setMsg({t:'w',txt:'✓ MT5 connected but no open positions right now.'});return}
+      for(const p of pos){
+        await createHolding({
+          symbol:p.symbol,qty:p.volume,avg_price:p.openPrice,
+          ltp:p.currentPrice||p.openPrice,pnl:p.profit||0,
+          sector:'Forex/Commodity',exchange:'MT5'
+        })
+      }
+      const bal=data.balance?`Balance: ${data.currency||'$'}${(+data.balance).toFixed(2)}`:''
+      setMsg({t:'ok',txt:`✅ Synced ${pos.length} MT5 position(s). ${bal}`})
+      onRefresh()
+    }catch(e){setMsg({t:'err',txt:`❌ ${e.message}`})}
     finally{setSyncing(null)}
   }
 
@@ -719,15 +518,23 @@ function HoldingsPage({ holdings, onRefresh }) {
           </div>
         </div>
         <div style={{ background:T.card,border:`1px solid ${mt5Status?.connected?'rgba(46,204,138,0.3)':T.border}`,borderRadius:16,padding:'16px 18px' }}>
-          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8 }}>
             <div>
-              <div style={{ fontWeight:700,fontSize:14,marginBottom:3,display:'flex',alignItems:'center',gap:8 }}>
+              <div style={{ fontWeight:700,fontSize:14,display:'flex',alignItems:'center',gap:8 }}>
                 📈 MetaTrader 5
-                {mt5Status?.connected && <span style={{ fontSize:10,color:T.g,background:'rgba(46,204,138,0.1)',padding:'1px 7px',borderRadius:999 }}>● Live</span>}
-                {mt5Status?.connected===false && <span style={{ fontSize:10,color:T.r }}>● Offline</span>}
+                {mt5Status?.connected&&<span style={{ fontSize:10,color:T.g,background:'rgba(46,204,138,0.1)',padding:'1px 7px',borderRadius:999 }}>● Connected</span>}
+                {!mt5Status?.connected&&<span style={{ fontSize:10,color:T.d }}>Not connected</span>}
               </div>
-              <div style={{ fontSize:11,color:T.d }}>{mt5Status?.connected?`Balance: $${mt5Status.balance?.toLocaleString()||'—'}`:'Run mt5_bridge.py on desktop'}</div>
+              <div style={{ fontSize:11,color:T.d }}>
+                {mt5Status?.connected?`${mt5Status.login||''}@${mt5Status.server||''} · Balance: ${mt5Status.currency||'$'}${mt5Status.balance?.toFixed(2)||'—'}`:'Connect in Settings → Brokers'}
+              </div>
             </div>
+            <button onClick={syncMt5} disabled={!!syncing||!mt5Status?.connected}
+              style={{ padding:'7px 14px',background:!mt5Status?.connected?'rgba(255,255,255,0.04)':syncing==='mt5'?'rgba(46,204,138,0.3)':T.g,border:`1px solid ${!mt5Status?.connected?T.border:'transparent'}`,borderRadius:10,color:!mt5Status?.connected?T.d:'#fff',fontSize:12,fontWeight:700,cursor:(syncing||!mt5Status?.connected)?'not-allowed':'pointer',fontFamily:T.font }}>
+              {syncing==='mt5'?'Syncing…':'⟳ Sync Positions'}
+            </button>
+          </div>
+        </div>
             <button onClick={syncMt5} disabled={!!syncing} style={{ padding:'8px 16px',background:syncing==='mt5'?'rgba(46,204,138,0.3)':T.g,border:'none',borderRadius:9,color:'#fff',fontSize:12,fontWeight:700,cursor:syncing?'not-allowed':'pointer',fontFamily:T.font }}>
               {syncing==='mt5'?'⟳ Syncing…':'⟳ Sync Positions'}
             </button>
@@ -932,6 +739,125 @@ Repeat loss symbols: ${[...new Set(trades.filter(t=>t.pnl<0).map(t=>t.symbol))].
   )
 }
 
+/* ── MT5 Settings Card — Login + Password via MetaApi ── */
+function Mt5SettingsCard() {
+  const [form,      setForm]      = useState({ login:'', password:'', server:'', metaapiToken:'' })
+  const [status,    setStatus]    = useState(null)
+  const [saving,    setSaving]    = useState(false)
+  const [msg,       setMsg]       = useState(null)
+  const [showToken, setShowToken] = useState(false)
+
+  useEffect(() => {
+    getMt5Status().then(s => setStatus(s)).catch(() => {})
+  }, [])
+
+  const connect = async () => {
+    if (!form.login || !form.password || !form.server) {
+      setMsg({ t:'err', txt:'Login, password, and server name are all required.' }); return
+    }
+    setSaving(true); setMsg(null)
+    try {
+      setMsg({ t:'info', txt:'⏳ Connecting to MT5 via MetaApi… this takes up to 30 seconds on first connect.' })
+      const res = await connectMt5(form.login, form.password, form.server, form.metaapiToken||undefined)
+      setStatus({ connected:true, login:res.login, server:res.server })
+      setMsg({ t:'ok', txt:`✅ MT5 connected! Account ${res.login}@${res.server}. Go to Holdings → Sync Positions.` })
+      setForm({ login:'', password:'', server:'', metaapiToken:'' })
+    } catch(e) {
+      setMsg({ t:'err', txt:`❌ ${e.message}` })
+    } finally { setSaving(false) }
+  }
+
+  const disconnect = async () => {
+    await disconnectMt5().catch(() => {})
+    setStatus({ connected:false }); setMsg({ t:'ok', txt:'MT5 disconnected.' })
+  }
+
+  const msgColors = {
+    ok:   { bg:'rgba(46,204,138,0.08)',  border:'rgba(46,204,138,0.25)',  color:T.g },
+    err:  { bg:'rgba(255,77,106,0.08)', border:'rgba(255,77,106,0.25)', color:T.r },
+    info: { bg:'rgba(91,46,255,0.08)',  border:'rgba(91,46,255,0.25)',  color:'rgba(255,255,255,0.7)' },
+  }
+
+  const inp = (label, key, type='text', ph='') => (
+    <div>
+      <label style={{ display:'block', fontSize:10, fontWeight:700, color:T.d, marginBottom:5, textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</label>
+      <input type={type} value={form[key]} placeholder={ph}
+        onChange={e => setForm(f => ({...f, [key]: e.target.value}))}
+        style={{ width:'100%', padding:'10px 12px', background:'rgba(255,255,255,0.06)', border:`1px solid ${T.border}`, borderRadius:9, color:'#fff', fontSize:13, outline:'none', fontFamily:T.mono, boxSizing:'border-box' }}
+        onFocus={e => e.target.style.borderColor = T.p}
+        onBlur={e => e.target.style.borderColor = T.border}
+      />
+    </div>
+  )
+
+  return (
+    <div style={{ background:T.card, border:`1px solid ${status?.connected?'rgba(46,204,138,0.3)':T.border}`, borderRadius:16, padding:'20px 22px', marginBottom:18, maxWidth:520 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+        <div>
+          <div style={{ fontSize:15, fontWeight:700, display:'flex', alignItems:'center', gap:10 }}>
+            📈 MetaTrader 5
+            {status?.connected && (
+              <span style={{ fontSize:11, color:T.g, fontWeight:600, padding:'2px 9px', background:'rgba(46,204,138,0.1)', borderRadius:999 }}>● Connected</span>
+            )}
+          </div>
+          <div style={{ fontSize:12, color:T.d, marginTop:3 }}>
+            {status?.connected
+              ? `${status.login} @ ${status.server}`
+              : 'Enter your MT5 login credentials — no script or desktop app needed'}
+          </div>
+        </div>
+        {status?.connected && (
+          <button onClick={disconnect} style={{ padding:'6px 13px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:T.r, fontSize:12, cursor:'pointer', fontFamily:T.font }}>
+            Disconnect
+          </button>
+        )}
+      </div>
+
+      {!status?.connected && (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {inp('MT5 Login (Account Number)', 'login', 'text', '12345678')}
+            {inp('Password', 'password', 'password', '••••••••')}
+          </div>
+          {inp('Server Name', 'server', 'text', 'Exness-MT5Real, ICMarkets-MT5, XM.COM-MT5Live...')}
+
+          {/* MetaApi token */}
+          <div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
+              <label style={{ fontSize:10, fontWeight:700, color:T.d, textTransform:'uppercase', letterSpacing:'0.07em' }}>MetaApi Token (optional but recommended)</label>
+              <button onClick={() => setShowToken(v=>!v)} style={{ fontSize:11, color:T.p, background:'none', border:'none', cursor:'pointer', fontFamily:T.font }}>{showToken?'Hide':'What is this?'}</button>
+            </div>
+            {showToken && (
+              <div style={{ marginBottom:8, padding:'10px 12px', background:'rgba(91,46,255,0.07)', border:`1px solid ${T.pd}`, borderRadius:9, fontSize:12, color:T.m, lineHeight:1.6 }}>
+                MetaApi is a free service that provides web access to MT5 accounts. Get a free token at{' '}
+                <a href="https://app.metaapi.cloud" target="_blank" rel="noopener noreferrer" style={{ color:T.p }}>app.metaapi.cloud</a>{' '}
+                → API access tokens. Free tier supports 5 accounts. Without your own token, TradeDaddy uses the shared server token (rate-limited).
+              </div>
+            )}
+            <input type="text" value={form.metaapiToken} placeholder="ey... (optional — uses shared token if blank)"
+              onChange={e => setForm(f => ({...f, metaapiToken: e.target.value}))}
+              style={{ width:'100%', padding:'10px 12px', background:'rgba(255,255,255,0.06)', border:`1px solid ${T.border}`, borderRadius:9, color:'#fff', fontSize:12, outline:'none', fontFamily:T.mono, boxSizing:'border-box' }}
+              onFocus={e => e.target.style.borderColor = T.p}
+              onBlur={e => e.target.style.borderColor = T.border}
+            />
+          </div>
+
+          <button onClick={connect} disabled={saving} style={{ padding:'12px 0', background:saving?'rgba(91,46,255,0.4)':T.p, border:'none', borderRadius:11, color:'#fff', fontSize:14, fontWeight:700, cursor:saving?'not-allowed':'pointer', fontFamily:T.font, opacity:saving?0.8:1, boxShadow:saving?'none':'0 2px 14px rgba(91,46,255,0.35)' }}>
+            {saving ? '⏳ Connecting…' : 'Connect MT5'}
+          </button>
+        </div>
+      )}
+
+      {msg && (
+        <div style={{ marginTop:12, padding:'10px 13px', background:msgColors[msg.t]?.bg, border:`1px solid ${msgColors[msg.t]?.border}`, borderRadius:10, fontSize:13, color:msgColors[msg.t]?.color, lineHeight:1.5 }}>
+          {msg.txt}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 /* ── SETTINGS ── */
 function SettingsPage({ onLogout, user }) {
   const [dhanForm,setDhanForm]=useState({clientId:'',accessToken:''})
@@ -1004,36 +930,8 @@ function SettingsPage({ onLogout, user }) {
         {dhanMsg && <div style={{ marginTop:11,padding:'9px 13px',background:dhanMsg.t==='ok'?'rgba(46,204,138,0.08)':'rgba(255,77,106,0.08)',border:`1px solid ${dhanMsg.t==='ok'?'rgba(46,204,138,0.25)':'rgba(255,77,106,0.25)'}`,borderRadius:10,fontSize:13 }}>{dhanMsg.txt}</div>}
       </div>
 
-      {/* MT5 */}
-      <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'20px 22px',marginBottom:18,maxWidth:520 }}>
-        <div style={{ fontSize:15,fontWeight:700,marginBottom:8 }}>📈 MetaTrader 5 Bridge</div>
-        <div style={{ fontSize:13,color:T.m,lineHeight:1.7,marginBottom:12 }}>
-          MT5 is a desktop app. Run the Python bridge to sync your positions every 60s. <strong style={{ color:'rgba(255,255,255,0.6)' }}>Your positions are isolated to your account only.</strong>
-        </div>
-        <div style={{ background:'rgba(255,255,255,0.03)',border:`1px solid ${T.f}`,borderRadius:11,padding:'12px 14px' }}>
-          <ol style={{ margin:0,padding:'0 0 0 16px',display:'flex',flexDirection:'column',gap:5 }}>
-            {['pip install MetaTrader5 requests',
-              'Download mt5_bridge.py below',
-              'Open it and paste your JWT token (DevTools → Application → td_token)',
-              'Run: python mt5_bridge.py',
-              'Go to Holdings → click ⟳ Sync MT5'].map((s,i)=>(
-              <li key={i} style={{ fontSize:13,color:T.m }}>{s}</li>
-            ))}
-          </ol>
-          <button
-            onClick={() => {
-              const script = getMt5BridgeScript()
-              const blob = new Blob([script], { type: 'text/plain' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url; a.download = 'mt5_bridge.py'; a.click()
-              URL.revokeObjectURL(url)
-            }}
-            style={{ marginTop:12,width:'100%',padding:'10px 0',background:'rgba(46,204,138,0.12)',border:'1px solid rgba(46,204,138,0.3)',borderRadius:9,color:T.g,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:T.font }}>
-            ⬇ Download mt5_bridge.py
-          </button>
-        </div>
-      </div>
+      {/* MT5 — Login + Password */}
+      <Mt5SettingsCard/>
 
       {/* Groq AI */}
       <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'20px 22px',maxWidth:520 }}>
