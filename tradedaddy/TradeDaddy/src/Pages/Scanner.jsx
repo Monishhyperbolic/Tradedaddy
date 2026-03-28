@@ -186,7 +186,17 @@ function Row({ item, onChart, idx }) {
       </td>
       <td style={{ padding:'9px 12px',textAlign:'center' }}><Badge signal={item.signal} /></td>
       <td style={{ padding:'9px 12px',textAlign:'right',fontSize:11,color:C.m }}>
-        {item.signal==='NEAR_BREAKOUT' ? <span style={{ color:C.a }}>{item.proximity?.toFixed(1)}%</span> : fmt(item.signal==='BREAKOUT'?item.refHigh:item.refLow,item.currency)}
+        {item.signal==='NEAR_BREAKOUT'
+          ? <span style={{ color:C.a }}>{item.proximity?.toFixed(1)}% of high</span>
+          : fmt(item.signal==='BREAKOUT'?item.refHigh:item.refLow,item.currency)}
+      </td>
+      <td style={{ padding:'9px 12px',textAlign:'center' }}>
+        {item.closePosition != null && (
+          <div title={`Close position in day range: ${(item.closePosition*100).toFixed(0)}%`}
+            style={{ width:32,height:8,background:'rgba(255,255,255,0.08)',borderRadius:3,overflow:'hidden',display:'inline-block',verticalAlign:'middle' }}>
+            <div style={{ height:'100%',width:`${item.closePosition*100}%`,background:item.signal==='BREAKOUT'?C.g:item.signal==='BREAKDOWN'?C.r:C.a,borderRadius:3 }}/>
+          </div>
+        )}
       </td>
       <td style={{ padding:'9px 12px' }}>
         <button onClick={()=>onChart(item.symbol)} style={{ padding:'4px 10px',background:'rgba(82,39,255,0.15)',border:'1px solid rgba(82,39,255,0.3)',borderRadius:7,color:'#fff',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap' }}>📊 Chart</button>
@@ -211,7 +221,7 @@ function Section({ title, items, onChart, emptyMsg }) {
           <table style={{ width:'100%',borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ borderBottom:`1px solid ${C.b}` }}>
-                {['#','Symbol','Price','Change','Volume','Vol/Avg','Signal','Ref Level','Chart'].map(h=>(
+                {['#','Symbol','Price','Change','Volume','Vol/Avg','Signal','Ref Level','Range Pos','Chart'].map(h=>(
                   <th key={h} style={{ padding:'9px 12px',fontSize:10,fontWeight:700,color:C.m,textTransform:'uppercase',letterSpacing:'0.05em',textAlign:['#','Symbol','Signal','Chart'].includes(h)?'left':'right',whiteSpace:'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -322,7 +332,7 @@ export default function Scanner() {
       {/* Asset category tabs */}
       <div style={{ display:'flex',gap:8,marginBottom:16,overflowX:'auto',paddingBottom:4 }}>
         {CATEGORIES.map(c=>(
-          <button key={c.id} onClick={()=>setCat(c.id)} style={{ padding:'9px 16px',borderRadius:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',flexShrink:0,transition:'all 0.2s',background:cat===c.id?C.p:C.s,color:cat===c.id?'#fff':C.m,fontWeight:cat===c.id?700:400,fontSize:13,border:cat===c.id?'none':`1px solid ${C.b}` }}>
+          <button key={c.id} onClick={()=>setCat(c.id)} style={{ padding:'9px 16px',border:'none',borderRadius:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',flexShrink:0,transition:'all 0.2s',background:cat===c.id?C.p:C.s,color:cat===c.id?'#fff':C.m,fontWeight:cat===c.id?700:400,fontSize:13,border:cat===c.id?'none':`1px solid ${C.b}` }}>
             <div style={{ fontSize:13 }}>{c.label}</div>
             <div style={{ fontSize:10,opacity:0.6,marginTop:1 }}>{c.desc}</div>
           </button>
@@ -333,7 +343,7 @@ export default function Scanner() {
       <div style={{ display:'flex',gap:6,marginBottom:18,alignItems:'center' }}>
         <span style={{ fontSize:11,color:C.m,textTransform:'uppercase',letterSpacing:'0.07em',marginRight:4 }}>Timeframe:</span>
         {TIMEFRAMES.map(t=>(
-          <button key={t.id} onClick={()=>setTf(t.id)} style={{ padding:'6px 16px',borderRadius:9,fontFamily:'inherit',cursor:'pointer',transition:'all 0.2s',background:tf===t.id?C.p:'rgba(255,255,255,0.07)',color:tf===t.id?'#fff':C.m,fontWeight:tf===t.id?700:400,fontSize:13,border:tf===t.id?'none':`1px solid ${C.b}` }}>
+          <button key={t.id} onClick={()=>setTf(t.id)} style={{ padding:'6px 16px',border:'none',borderRadius:9,fontFamily:'inherit',cursor:'pointer',transition:'all 0.2s',background:tf===t.id?C.p:'rgba(255,255,255,0.07)',color:tf===t.id?'#fff':C.m,fontWeight:tf===t.id?700:400,fontSize:13,border:tf===t.id?'none':`1px solid ${C.b}` }}>
             {t.label}
             <span style={{ fontSize:9,display:'block',opacity:0.6,marginTop:1 }}>{t.desc}</span>
           </button>

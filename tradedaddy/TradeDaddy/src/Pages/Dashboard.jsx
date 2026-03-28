@@ -370,13 +370,13 @@ function JournalPage({ trades, onAdd, onDelete }) {
           onFocus={e=>e.target.style.borderColor=T.p} onBlur={e=>e.target.style.borderColor=T.border}/>
         <div style={{ display:'flex',gap:4 }}>
           {['ALL','LONG','SHORT'].map(f=>(
-            <button key={f} onClick={()=>setFilter(f)} style={{ padding:'7px 13px',borderRadius:9,fontFamily:T.font,background:filter===f?T.p:T.card,color:filter===f?'#fff':T.m,fontSize:12,fontWeight:filter===f?700:400,cursor:'pointer',border:`1px solid ${filter===f?'transparent':T.border}` }}>{f}</button>
+            <button key={f} onClick={()=>setFilter(f)} style={{ padding:'7px 13px',border:'none',borderRadius:9,fontFamily:T.font,background:filter===f?T.p:T.card,color:filter===f?'#fff':T.m,fontSize:12,fontWeight:filter===f?700:400,cursor:'pointer',border:`1px solid ${filter===f?'transparent':T.border}` }}>{f}</button>
           ))}
         </div>
         <div style={{ marginLeft:'auto',display:'flex',gap:4,alignItems:'center' }}>
           <span style={{ fontSize:11,color:T.d }}>Sort:</span>
           {[['date','Date'],['pnl','P&L'],['discipline','Disc']].map(([v,l])=>(
-            <button key={v} onClick={()=>setSort(v)} style={{ padding:'6px 11px',borderRadius:8,fontFamily:T.font,background:sort===v?T.pd:T.card,color:sort===v?'rgba(255,255,255,0.9)':T.d,fontSize:11,fontWeight:sort===v?700:400,cursor:'pointer',border:`1px solid ${sort===v?'rgba(91,46,255,0.35)':T.border}` }}>{l}</button>
+            <button key={v} onClick={()=>setSort(v)} style={{ padding:'6px 11px',border:'none',borderRadius:8,fontFamily:T.font,background:sort===v?T.pd:T.card,color:sort===v?'rgba(255,255,255,0.9)':T.d,fontSize:11,fontWeight:sort===v?700:400,cursor:'pointer',border:`1px solid ${sort===v?'rgba(91,46,255,0.35)':T.border}` }}>{l}</button>
           ))}
         </div>
       </div>
