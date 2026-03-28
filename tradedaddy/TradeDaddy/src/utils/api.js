@@ -108,8 +108,10 @@ export const getDhanStatus    = ()   => req('/api/broker/dhan/status')
 export const disconnectDhan   = ()   => req('/api/broker/dhan/disconnect', { method: 'DELETE' })
 
 /* ── MT5 ── */
+export const connectMt5       = (login, password, server, metaapiToken) => req('/api/broker/mt5/connect', { method: 'POST', body: JSON.stringify({ login, password, server, metaapiToken }) })
 export const getMt5Positions  = ()   => req('/api/broker/mt5/positions')
 export const getMt5Status     = ()   => req('/api/broker/mt5/status')
+export const disconnectMt5    = ()   => req('/api/broker/mt5/disconnect', { method: 'DELETE' })
 
 /* ── Watchlist ── */
 export const getWatchlist        = ()       => req('/api/watchlist')

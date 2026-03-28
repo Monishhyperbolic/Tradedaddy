@@ -41,10 +41,9 @@ function EventRow({ event }) {
 
   return (
     <>
-      <tr onClick={()=>setOpen(!open)} style={{ borderBottom:`1px solid ${C.f}`, cursor:'pointer', transition:'background 0.15s' }}
+      <tr onClick={()=>setOpen(!open)} style={{ borderBottom:`1px solid ${C.f}`, cursor:'pointer', transition:'background 0.15s', background:open?'rgba(82,39,255,0.05)':'transparent' }}
         onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.02)'}
-        onMouseLeave={e=>e.currentTarget.style.background=open?'rgba(82,39,255,0.05)':'transparent'}
-        style={{ borderBottom:`1px solid ${C.f}`, cursor:'pointer', background:open?'rgba(82,39,255,0.05)':'transparent' }}>
+        onMouseLeave={e=>e.currentTarget.style.background=open?'rgba(82,39,255,0.05)':'transparent'}>
         <td style={{ padding:'11px 14px', fontSize:13, color:C.m, whiteSpace:'nowrap' }}>{event.time||'—'}</td>
         <td style={{ padding:'11px 14px', textAlign:'center', fontSize:17 }}>{flag}</td>
         <td style={{ padding:'11px 14px', textAlign:'center' }}>

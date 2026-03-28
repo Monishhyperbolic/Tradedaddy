@@ -322,7 +322,7 @@ export default function Scanner() {
       {/* Asset category tabs */}
       <div style={{ display:'flex',gap:8,marginBottom:16,overflowX:'auto',paddingBottom:4 }}>
         {CATEGORIES.map(c=>(
-          <button key={c.id} onClick={()=>setCat(c.id)} style={{ padding:'9px 16px',border:'none',borderRadius:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',flexShrink:0,transition:'all 0.2s',background:cat===c.id?C.p:C.s,color:cat===c.id?'#fff':C.m,fontWeight:cat===c.id?700:400,fontSize:13,border:cat===c.id?'none':`1px solid ${C.b}` }}>
+          <button key={c.id} onClick={()=>setCat(c.id)} style={{ padding:'9px 16px',borderRadius:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',flexShrink:0,transition:'all 0.2s',background:cat===c.id?C.p:C.s,color:cat===c.id?'#fff':C.m,fontWeight:cat===c.id?700:400,fontSize:13,border:cat===c.id?'none':`1px solid ${C.b}` }}>
             <div style={{ fontSize:13 }}>{c.label}</div>
             <div style={{ fontSize:10,opacity:0.6,marginTop:1 }}>{c.desc}</div>
           </button>
@@ -333,7 +333,7 @@ export default function Scanner() {
       <div style={{ display:'flex',gap:6,marginBottom:18,alignItems:'center' }}>
         <span style={{ fontSize:11,color:C.m,textTransform:'uppercase',letterSpacing:'0.07em',marginRight:4 }}>Timeframe:</span>
         {TIMEFRAMES.map(t=>(
-          <button key={t.id} onClick={()=>setTf(t.id)} style={{ padding:'6px 16px',border:'none',borderRadius:9,fontFamily:'inherit',cursor:'pointer',transition:'all 0.2s',background:tf===t.id?C.p:'rgba(255,255,255,0.07)',color:tf===t.id?'#fff':C.m,fontWeight:tf===t.id?700:400,fontSize:13,border:tf===t.id?'none':`1px solid ${C.b}` }}>
+          <button key={t.id} onClick={()=>setTf(t.id)} style={{ padding:'6px 16px',borderRadius:9,fontFamily:'inherit',cursor:'pointer',transition:'all 0.2s',background:tf===t.id?C.p:'rgba(255,255,255,0.07)',color:tf===t.id?'#fff':C.m,fontWeight:tf===t.id?700:400,fontSize:13,border:tf===t.id?'none':`1px solid ${C.b}` }}>
             {t.label}
             <span style={{ fontSize:9,display:'block',opacity:0.6,marginTop:1 }}>{t.desc}</span>
           </button>

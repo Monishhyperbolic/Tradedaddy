@@ -90,7 +90,7 @@ function ArticleCard({ article }) {
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8, flexShrink:0 }}>
             <span style={{ fontSize:11, color:T.d, whiteSpace:'nowrap' }}>{timeAgo(article.pubDate)}</span>
             <button onClick={analyze} disabled={loading} style={{
-              padding:'6px 14px', borderRadius:9, border:'none', cursor:'pointer', fontFamily:'inherit',
+              padding:'6px 14px', borderRadius:9, cursor:'pointer', fontFamily:'inherit',
               background: analysis ? 'rgba(91,46,255,0.15)' : T.p,
               border: analysis ? '1px solid rgba(91,46,255,0.35)' : '1px solid transparent',
               color:'#fff', fontSize:11, fontWeight:700, whiteSpace:'nowrap',
@@ -192,7 +192,7 @@ export default function News() {
       <div style={{ display:'flex', gap:6, marginBottom:20, overflowX:'auto', paddingBottom:2 }}>
         {CATS.map(c=>(
           <button key={c.id} onClick={()=>setCat(c.id)} style={{
-            padding:'9px 16px', border:'none', borderRadius:11, cursor:'pointer', fontFamily:'inherit',
+            padding:'9px 16px', borderRadius:11, cursor:'pointer', fontFamily:'inherit',
             whiteSpace:'nowrap', flexShrink:0, transition:'all 0.18s',
             background: cat===c.id ? T.p : T.card,
             color: cat===c.id ? '#fff' : T.m,
