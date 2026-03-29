@@ -243,8 +243,6 @@ export default function SectorAnalysis() {
 
       {/* HF Token setup */}
       
-      )}
-
       {/* Market summary */}
       {marketSummary && (
         <div style={{ background:'rgba(82,39,255,0.08)',border:'1px solid rgba(82,39,255,0.25)',borderRadius:14,padding:'16px 18px',marginBottom:20 }}>
