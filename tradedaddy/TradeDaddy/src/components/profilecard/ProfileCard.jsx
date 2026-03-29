@@ -15,8 +15,8 @@ const round = (v, precision = 3) => parseFloat(v.toFixed(precision));
 const adjust = (v, fMin, fMax, tMin, tMax) => round(tMin + ((tMax - tMin) * (v - fMin)) / (fMax - fMin));
 
 const ProfileCardComponent = ({
-  avatarUrl = '/src/components/pfp.png',
-  iconUrl = '/src/components/pfp.png',
+  avatarUrl = 'tradedaddy/TradeDaddy/src/components/pfp.png',
+  iconUrl = 'tradedaddy/TradeDaddy/src/components/pfp.png',
   grainUrl = '<Placeholder for grain URL>',
   innerGradient,
   // Removed glow-related props (no longer used)
