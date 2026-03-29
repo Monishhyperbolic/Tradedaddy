@@ -14,6 +14,7 @@ import {
   groqChat, getMe, auth, logoutUser,
 } from '../utils/api'
 import Scanner from './Scanner'
+import ImportTrades from './ImportTrades'
 import Analytics from './Analytics'
 import News from './News'
 import EconomicCalendar from './EconomicCalendar'
@@ -39,6 +40,7 @@ const NAV = [
   { icon:'📰', label:'News',      id:'news' },
   { icon:'📅', label:'Calendar',  id:'calendar' },
   { icon:'🤖', label:'AI Chat',   id:'chat' },
+  { icon:'⬆',  label:'Import',    id:'import' },
   { icon:'⚙',  label:'Settings',  id:'settings' },
 ]
 
@@ -1390,8 +1392,38 @@ function SettingsPage({ onLogout, user }) {
         {dhanMsg && <div style={{ marginTop:11,padding:'9px 13px',background:dhanMsg.t==='ok'?'rgba(46,204,138,0.08)':'rgba(255,77,106,0.08)',border:`1px solid ${dhanMsg.t==='ok'?'rgba(46,204,138,0.25)':'rgba(255,77,106,0.25)'}`,borderRadius:10,fontSize:13 }}>{dhanMsg.txt}</div>}
       </div>
 
-      {/* MT5 — Login + Password */}
-      <Mt5SettingsCard/>
+      {/* MT5 — Recommended: CSV Import | Alternative: MetaApi live */}
+      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:'20px 22px', marginBottom:18, maxWidth:520 }}>
+        <div style={{ fontSize:15, fontWeight:700, marginBottom:12 }}>📈 MetaTrader 5</div>
+
+        {/* Recommended */}
+        <div style={{ background:'rgba(46,204,138,0.07)', border:'1px solid rgba(46,204,138,0.2)', borderRadius:12, padding:'14px 16px', marginBottom:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:14 }}>⭐</span>
+            <div style={{ fontSize:13, fontWeight:700, color:T.g }}>Recommended: Import Trade History CSV</div>
+          </div>
+          <div style={{ fontSize:12, color:T.m, lineHeight:1.65, marginBottom:10 }}>
+            Works with <strong style={{ color:'rgba(255,255,255,0.75)' }}>any broker worldwide</strong> — no server name required, no API keys, no compatibility issues.
+          </div>
+          <div style={{ fontSize:11, color:T.d, marginBottom:10 }}>
+            MT5: <strong style={{ color:'rgba(255,255,255,0.5)' }}>View → Terminal → Account History → right-click → Save as Report (HTML or CSV)</strong>
+          </div>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('td:navigate', {detail:'import'}))}
+            style={{ width:'100%', padding:'10px 0', background:T.g, border:'none', borderRadius:10, color:'#000', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:T.font }}>
+            ⬆ Go to Import Trades
+          </button>
+        </div>
+
+        {/* Alternative: MetaApi */}
+        <details>
+          <summary style={{ fontSize:12, color:T.d, cursor:'pointer', userSelect:'none', padding:'2px 0' }}>
+            ▸ Alternative: Live MT5 connection via MetaApi (experimental — not all brokers supported)
+          </summary>
+          <div style={{ marginTop:14 }}>
+            <Mt5SettingsCard/>
+          </div>
+        </details>
+      </div>
 
       {/* Groq AI */}
       <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'20px 22px',maxWidth:520 }}>
@@ -1434,6 +1466,13 @@ export default function Dashboard() {
 
   useEffect(() => { loadAll() }, [])
 
+  // Handle internal navigation events (e.g. from Settings → Import)
+  useEffect(() => {
+    const handler = (e) => setPage(e.detail)
+    window.addEventListener('td:navigate', handler)
+    return () => window.removeEventListener('td:navigate', handler)
+  }, [])
+
   const handleAddTrade = async (data, existingId) => {
     if(existingId){ const u=await updateTrade(existingId,data); setTrades(p=>p.map(t=>t.id===existingId?u:t)) }
     else{ const c=await createTrade(data); setTrades(p=>[c,...p]) }
@@ -1451,6 +1490,7 @@ export default function Dashboard() {
     news:      <News/>,
     calendar:  <EconomicCalendar/>,
     chat:      <ChatPage trades={trades} holdings={holdings}/>,
+    import:    <ImportTrades onImportDone={loadAll}/>,
     settings:  <SettingsPage onLogout={handleLogout} user={user}/>,
   }
 

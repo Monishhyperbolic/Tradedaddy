@@ -242,23 +242,7 @@ export default function SectorAnalysis() {
       </div>
 
       {/* HF Token setup */}
-      {!tokenSet && (
-        <div style={{ background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.25)',borderRadius:14,padding:'16px 18px',marginBottom:20 }}>
-          <div style={{ fontWeight:700,fontSize:14,marginBottom:6 }}>⚡ Set HuggingFace API Token for AI Analysis (Free)</div>
-          <div style={{ fontSize:12,color:C.m,marginBottom:10 }}>Get a free token at <a href="https://huggingface.co/settings/tokens" target="_blank" style={{ color:C.p }}>huggingface.co/settings/tokens</a> (read access is enough)</div>
-          <div style={{ display:'flex',gap:10 }}>
-            <input value={hfTokenInput} onChange={e=>setHfTokenInput(e.target.value)} placeholder="hf_xxxxxxxxxxxxxxxx"
-              style={{ flex:1,padding:'9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.b}`,borderRadius:10,color:'#fff',fontSize:13,outline:'none',fontFamily:'monospace' }}
-              onFocus={e=>e.target.style.borderColor=C.p} onBlur={e=>e.target.style.borderColor=C.b} />
-            <button onClick={saveToken} style={{ padding:'9px 20px',background:C.a,border:'none',borderRadius:10,color:'#000',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit' }}>Save Token</button>
-          </div>
-        </div>
-      )}
-      {tokenSet && (
-        <div style={{ padding:'8px 14px',background:'rgba(52,199,123,0.08)',border:'1px solid rgba(52,199,123,0.2)',borderRadius:12,fontSize:12,color:C.g,marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center' }}>
-          ✅ HuggingFace token active — AI analysis enabled
-          <button onClick={()=>{localStorage.removeItem('hf_token');setTokenSet(false)}} style={{ background:'none',border:'none',color:C.m,cursor:'pointer',fontSize:11 }}>Remove</button>
-        </div>
+      
       )}
 
       {/* Market summary */}
