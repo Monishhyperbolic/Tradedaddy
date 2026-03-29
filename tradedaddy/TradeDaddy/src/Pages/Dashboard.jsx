@@ -3,7 +3,7 @@
  * Fixes: user name from auth (not hardcoded), MT5/Dhan data per-user
  * Improvements: better UI, real data in AI, no HF token UI
  */
-import { useState, useEffect, useRef, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { connectMt5, disconnectMt5, searchMt5Servers } from '../utils/api'
 import {
