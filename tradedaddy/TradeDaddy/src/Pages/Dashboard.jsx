@@ -3,9 +3,9 @@
  * Fixes: user name from auth (not hardcoded), MT5/Dhan data per-user
  * Improvements: better UI, real data in AI, no HF token UI
  */
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { connectMt5, disconnectMt5 } from '../utils/api'
+import { connectMt5, disconnectMt5, searchMt5Servers } from '../utils/api'
 import {
   getTrades, createTrade, updateTrade, deleteTrade,
   getHoldings, createHolding, deleteHolding, clearHoldings,
@@ -518,7 +518,7 @@ function HoldingsPage({ holdings, onRefresh }) {
           </div>
         </div>
         <div style={{ background:T.card,border:`1px solid ${mt5Status?.connected?'rgba(46,204,138,0.3)':T.border}`,borderRadius:16,padding:'16px 18px' }}>
-          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8 }}>
+          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
             <div>
               <div style={{ fontWeight:700,fontSize:14,display:'flex',alignItems:'center',gap:8 }}>
                 📈 MetaTrader 5
@@ -736,115 +736,200 @@ Repeat loss symbols: ${[...new Set(trades.filter(t=>t.pnl<0).map(t=>t.symbol))].
 
 /* ── MT5 Settings Card — Login + Password via MetaApi ── */
 function Mt5SettingsCard() {
-  const [form,      setForm]      = useState({ login:'', password:'', server:'', metaapiToken:'' })
+  const [form,      setForm]      = useState({ login:'', password:'', server:'', platform:'mt5', metaapiToken:'' })
   const [status,    setStatus]    = useState(null)
   const [saving,    setSaving]    = useState(false)
+  const [step,      setStep]      = useState(0)
   const [msg,       setMsg]       = useState(null)
-  const [showToken, setShowToken] = useState(false)
+  // Live server search
+  const [serverQ,   setServerQ]   = useState('')
+  const [servers,   setServers]   = useState([])
+  const [searching, setSearching] = useState(false)
+  const [showDrop,  setShowDrop]  = useState(false)
+  const searchTimer = useRef(null)
 
   useEffect(() => {
     getMt5Status().then(s => setStatus(s)).catch(() => {})
   }, [])
 
+  // Debounced server search
+  const onServerInput = (val) => {
+    setServerQ(val)
+    setForm(f => ({...f, server: val}))
+    setShowDrop(true)
+    clearTimeout(searchTimer.current)
+    if (val.length < 2) { setServers([]); return }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const data = await searchMt5Servers(val, form.platform)
+        setServers(data.servers || [])
+      } catch { setServers([]) }
+      finally { setSearching(false) }
+    }, 400)
+  }
+
+  const pickServer = (name) => {
+    setServerQ(name)
+    setForm(f => ({...f, server: name}))
+    setShowDrop(false)
+    setServers([])
+  }
+
   const connect = async () => {
-    if (!form.login || !form.password || !form.server) {
-      setMsg({ t:'err', txt:'Login, password, and server name are all required.' }); return
+    if (!form.login || !form.password || !form.server.trim()) {
+      setMsg({ t:'err', txt:'Account number, password, and server name are all required.' }); return
     }
-    setSaving(true); setMsg(null)
+    setSaving(true); setStep(1); setMsg({ t:'info', txt:'⏳ Provisioning MT5 account…' })
     try {
-      setMsg({ t:'info', txt:'⏳ Connecting to MT5 via MetaApi… this takes up to 30 seconds on first connect.' })
-      const res = await connectMt5(form.login, form.password, form.server, form.metaapiToken||undefined)
-      setStatus({ connected:true, login:res.login, server:res.server })
-      setMsg({ t:'ok', txt:`✅ MT5 connected! Account ${res.login}@${res.server}. Go to Holdings → Sync Positions.` })
-      setForm({ login:'', password:'', server:'', metaapiToken:'' })
+      const res = await connectMt5(
+        form.login.trim(), form.password,
+        form.server.trim(), form.platform,
+        form.metaapiToken.trim() || undefined
+      )
+      setStep(2); setMsg({ t:'info', txt:'⏳ Connecting to broker server…' })
+      await new Promise(r => setTimeout(r, 2000))
+      const st = await getMt5Status().catch(() => null)
+      setStatus(st || { connected:true, login:res.login, server:res.server })
+      setMsg({ t:'ok', txt:`✅ Connected! ${res.login} @ ${res.server}. Go to Holdings → Sync Positions.` })
+      setForm({ login:'', password:'', server:'', platform:'mt5', metaapiToken:'' })
+      setServerQ('')
     } catch(e) {
       setMsg({ t:'err', txt:`❌ ${e.message}` })
-    } finally { setSaving(false) }
+    } finally { setSaving(false); setStep(0) }
   }
 
   const disconnect = async () => {
     await disconnectMt5().catch(() => {})
-    setStatus({ connected:false }); setMsg({ t:'ok', txt:'MT5 disconnected.' })
+    setStatus({ connected:false })
+    setMsg({ t:'ok', txt:'MT5 disconnected.' })
   }
 
-  const msgColors = {
-    ok:   { bg:'rgba(46,204,138,0.08)',  border:'rgba(46,204,138,0.25)',  color:T.g },
-    err:  { bg:'rgba(255,77,106,0.08)', border:'rgba(255,77,106,0.25)', color:T.r },
-    info: { bg:'rgba(91,46,255,0.08)',  border:'rgba(91,46,255,0.25)',  color:'rgba(255,255,255,0.7)' },
+  const MC = {
+    ok:   { bg:'rgba(46,204,138,0.08)',  border:'rgba(46,204,138,0.25)',  c:T.g },
+    err:  { bg:'rgba(255,77,106,0.08)', border:'rgba(255,77,106,0.25)', c:T.r },
+    info: { bg:'rgba(91,46,255,0.08)',  border:'rgba(91,46,255,0.2)',   c:T.m },
   }
 
-  const inp = (label, key, type='text', ph='') => (
-    <div>
-      <label style={{ display:'block', fontSize:10, fontWeight:700, color:T.d, marginBottom:5, textTransform:'uppercase', letterSpacing:'0.07em' }}>{label}</label>
-      <input type={type} value={form[key]} placeholder={ph}
-        onChange={e => setForm(f => ({...f, [key]: e.target.value}))}
-        style={{ width:'100%', padding:'10px 12px', background:'rgba(255,255,255,0.06)', border:`1px solid ${T.border}`, borderRadius:9, color:'#fff', fontSize:13, outline:'none', fontFamily:T.mono, boxSizing:'border-box' }}
-        onFocus={e => e.target.style.borderColor = T.p}
-        onBlur={e => e.target.style.borderColor = T.border}
-      />
+  const InpStyle = { width:'100%', padding:'10px 12px', background:'rgba(255,255,255,0.06)', border:`1px solid ${T.border}`, borderRadius:9, color:'#fff', fontSize:13, outline:'none', fontFamily:T.mono, boxSizing:'border-box' }
+  const Lbl = ({ children, note }) => (
+    <div style={{ display:'block', fontSize:10, fontWeight:700, color:T.d, marginBottom:5, textTransform:'uppercase', letterSpacing:'0.07em' }}>
+      {children} {note && <span style={{ fontWeight:400, textTransform:'none', letterSpacing:'normal', color:'rgba(255,255,255,0.2)' }}>{note}</span>}
     </div>
   )
 
   return (
-    <div style={{ background:T.card, border:`1px solid ${status?.connected?'rgba(46,204,138,0.3)':T.border}`, borderRadius:16, padding:'20px 22px', marginBottom:18, maxWidth:520 }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+    <div style={{ background:T.card, border:`1px solid ${status?.connected ? 'rgba(46,204,138,0.3)' : T.border}`, borderRadius:16, padding:'20px 22px', marginBottom:18, maxWidth:520 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: status?.connected ? 0 : 16 }}>
         <div>
-          <div style={{ fontSize:15, fontWeight:700, display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ fontSize:15, fontWeight:700, display:'flex', alignItems:'center', gap:9 }}>
             📈 MetaTrader 5
-            {status?.connected && (
-              <span style={{ fontSize:11, color:T.g, fontWeight:600, padding:'2px 9px', background:'rgba(46,204,138,0.1)', borderRadius:999 }}>● Connected</span>
-            )}
+            {status?.connected && <span style={{ fontSize:11, color:T.g, fontWeight:600, padding:'2px 9px', background:'rgba(46,204,138,0.1)', borderRadius:999 }}>● Connected</span>}
           </div>
           <div style={{ fontSize:12, color:T.d, marginTop:3 }}>
-            {status?.connected
-              ? `${status.login} @ ${status.server}`
-              : 'Enter your MT5 login credentials — no script or desktop app needed'}
+            {status?.connected ? `Account ${status.login} @ ${status.server}` : 'Enter your MT5 credentials — no script needed'}
           </div>
         </div>
         {status?.connected && (
-          <button onClick={disconnect} style={{ padding:'6px 13px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:T.r, fontSize:12, cursor:'pointer', fontFamily:T.font }}>
-            Disconnect
-          </button>
+          <button onClick={disconnect} style={{ padding:'6px 14px', background:'rgba(255,77,106,0.1)', border:'1px solid rgba(255,77,106,0.2)', borderRadius:8, color:T.r, fontSize:12, cursor:'pointer', fontFamily:T.font }}>Disconnect</button>
         )}
       </div>
 
       {!status?.connected && (
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          {/* Account + Password */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {inp('MT5 Login (Account Number)', 'login', 'text', '12345678')}
-            {inp('Password', 'password', 'password', '••••••••')}
-          </div>
-          {inp('Server Name', 'server', 'text', 'Exness-MT5Real, ICMarkets-MT5, XM.COM-MT5Live...')}
-
-          {/* MetaApi token */}
-          <div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
-              <label style={{ fontSize:10, fontWeight:700, color:T.d, textTransform:'uppercase', letterSpacing:'0.07em' }}>MetaApi Token (optional but recommended)</label>
-              <button onClick={() => setShowToken(v=>!v)} style={{ fontSize:11, color:T.p, background:'none', border:'none', cursor:'pointer', fontFamily:T.font }}>{showToken?'Hide':'What is this?'}</button>
+            <div>
+              <Lbl>Account Number</Lbl>
+              <input value={form.login} placeholder="12345678" onChange={e=>setForm(f=>({...f,login:e.target.value}))} style={InpStyle}
+                onFocus={e=>e.target.style.borderColor=T.p} onBlur={e=>e.target.style.borderColor=T.border}/>
             </div>
-            {showToken && (
-              <div style={{ marginBottom:8, padding:'10px 12px', background:'rgba(91,46,255,0.07)', border:`1px solid ${T.pd}`, borderRadius:9, fontSize:12, color:T.m, lineHeight:1.6 }}>
-                MetaApi is a free service that provides web access to MT5 accounts. Get a free token at{' '}
-                <a href="https://app.metaapi.cloud" target="_blank" rel="noopener noreferrer" style={{ color:T.p }}>app.metaapi.cloud</a>{' '}
-                → API access tokens. Free tier supports 5 accounts. Without your own token, TradeDaddy uses the shared server token (rate-limited).
+            <div>
+              <Lbl>Password</Lbl>
+              <input type="password" value={form.password} placeholder="••••••••" onChange={e=>setForm(f=>({...f,password:e.target.value}))} style={InpStyle}
+                onFocus={e=>e.target.style.borderColor=T.p} onBlur={e=>e.target.style.borderColor=T.border}/>
+            </div>
+          </div>
+
+          {/* Server with live search */}
+          <div style={{ position:'relative' }}>
+            <Lbl>Server Name</Lbl>
+            <div style={{ position:'relative' }}>
+              <input
+                value={serverQ}
+                onChange={e=>onServerInput(e.target.value)}
+                onFocus={()=>setShowDrop(true)}
+                onBlur={()=>setTimeout(()=>setShowDrop(false),200)}
+                placeholder="Type to search — e.g. Vantage, Exness, XM…"
+                style={{...InpStyle, paddingRight:32}}
+                onFocusProp={e=>e.target.style.borderColor=T.p}
+              />
+              {searching && <span style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', fontSize:11, color:T.d }}>⟳</span>}
+            </div>
+            {showDrop && servers.length > 0 && (
+              <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:50, background:'#0d0b16', border:`1px solid ${T.border}`, borderRadius:9, marginTop:4, overflow:'hidden', boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}>
+                {servers.map(s => (
+                  <div key={s.name} onMouseDown={()=>pickServer(s.name)}
+                    style={{ padding:'9px 12px', fontSize:13, cursor:'pointer', color:T.t, fontFamily:T.mono, borderBottom:`1px solid ${T.f}` }}
+                    onMouseEnter={e=>e.currentTarget.style.background='rgba(91,46,255,0.15)'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    {s.name}
+                    {s.platform && <span style={{ marginLeft:8, fontSize:10, color:T.d }}>{s.platform.toUpperCase()}</span>}
+                  </div>
+                ))}
               </div>
             )}
-            <input type="text" value={form.metaapiToken} placeholder="ey... (optional — uses shared token if blank)"
-              onChange={e => setForm(f => ({...f, metaapiToken: e.target.value}))}
-              style={{ width:'100%', padding:'10px 12px', background:'rgba(255,255,255,0.06)', border:`1px solid ${T.border}`, borderRadius:9, color:'#fff', fontSize:12, outline:'none', fontFamily:T.mono, boxSizing:'border-box' }}
-              onFocus={e => e.target.style.borderColor = T.p}
-              onBlur={e => e.target.style.borderColor = T.border}
-            />
+            <div style={{ fontSize:11, color:T.d, marginTop:4 }}>
+              Find exact name: <strong style={{ color:'rgba(255,255,255,0.45)' }}>MT5 → File → Open an Account</strong> → copy server from the list shown
+            </div>
           </div>
 
-          <button onClick={connect} disabled={saving} style={{ padding:'12px 0', background:saving?'rgba(91,46,255,0.4)':T.p, border:'none', borderRadius:11, color:'#fff', fontSize:14, fontWeight:700, cursor:saving?'not-allowed':'pointer', fontFamily:T.font, opacity:saving?0.8:1, boxShadow:saving?'none':'0 2px 14px rgba(91,46,255,0.35)' }}>
-            {saving ? '⏳ Connecting…' : 'Connect MT5'}
+          {/* Platform + MetaApi Token */}
+          <div style={{ display:'grid', gridTemplateColumns:'100px 1fr', gap:12 }}>
+            <div>
+              <Lbl>Platform</Lbl>
+              <select value={form.platform} onChange={e=>setForm(f=>({...f,platform:e.target.value}))}
+                style={{...InpStyle, fontFamily:T.font}}>
+                <option value="mt5">MT5</option>
+                <option value="mt4">MT4</option>
+              </select>
+            </div>
+            <div>
+              <Lbl note="(optional — higher limits)">MetaApi Token</Lbl>
+              <input type="password" value={form.metaapiToken} placeholder="ey… from app.metaapi.cloud"
+                onChange={e=>setForm(f=>({...f,metaapiToken:e.target.value}))}
+                style={{...InpStyle, fontSize:11}}
+                onFocus={e=>e.target.style.borderColor=T.p} onBlur={e=>e.target.style.borderColor=T.border}/>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          {saving && (
+            <div style={{ display:'flex', gap:6 }}>
+              {['Provisioning','Connecting','Ready'].map((s,i) => (
+                <div key={s} style={{ flex:1, padding:'6px 0', textAlign:'center', borderRadius:7, fontSize:11, fontWeight:600,
+                  background: step > i ? 'rgba(46,204,138,0.15)' : step === i+1 ? 'rgba(91,46,255,0.15)' : T.f,
+                  color: step > i ? T.g : step === i+1 ? T.p : T.d,
+                  border:`1px solid ${step>i?'rgba(46,204,138,0.3)':step===i+1?'rgba(91,46,255,0.3)':T.border}` }}>
+                  {step > i ? '✓ ' : step === i+1 ? '⟳ ' : ''}{s}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button onClick={connect} disabled={saving} style={{ padding:'12px 0', background:saving?'rgba(91,46,255,0.4)':T.p, border:'none', borderRadius:11, color:'#fff', fontSize:14, fontWeight:700, cursor:saving?'not-allowed':'pointer', fontFamily:T.font, boxShadow:saving?'none':'0 2px 14px rgba(91,46,255,0.35)' }}>
+            {saving ? (step===1?'⏳ Provisioning…':'⏳ Connecting to broker…') : 'Connect MT5'}
           </button>
+
+          <div style={{ fontSize:11, color:T.d, lineHeight:1.6, padding:'10px 12px', background:'rgba(255,255,255,0.02)', borderRadius:9, border:`1px solid ${T.f}` }}>
+            Powered by <a href="https://metaapi.cloud" target="_blank" rel="noopener noreferrer" style={{ color:T.p }}>MetaApi.cloud</a> — free tier · no Python needed.
+            Required: <code style={{ fontFamily:T.mono, color:'#C084FC', fontSize:11 }}>wrangler secret put METAAPI_TOKEN</code>
+          </div>
         </div>
       )}
 
       {msg && (
-        <div style={{ marginTop:12, padding:'10px 13px', background:msgColors[msg.t]?.bg, border:`1px solid ${msgColors[msg.t]?.border}`, borderRadius:10, fontSize:13, color:msgColors[msg.t]?.color, lineHeight:1.5 }}>
+        <div style={{ marginTop:12, padding:'10px 13px', background:MC[msg.t]?.bg, border:`1px solid ${MC[msg.t]?.border}`, borderRadius:10, fontSize:12, color:MC[msg.t]?.c, lineHeight:1.6 }}>
           {msg.txt}
         </div>
       )}

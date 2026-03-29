@@ -107,11 +107,14 @@ export const getDhanTrades    = ()   => req('/api/broker/dhan/tradebook')
 export const getDhanStatus    = ()   => req('/api/broker/dhan/status')
 export const disconnectDhan   = ()   => req('/api/broker/dhan/disconnect', { method: 'DELETE' })
 
-/* ── MT5 ── */
-export const connectMt5       = (login, password, server, metaapiToken) => req('/api/broker/mt5/connect', { method: 'POST', body: JSON.stringify({ login, password, server, metaapiToken }) })
+/* ── MT5 (MetaApi — login+password, no script needed) ── */
+export const connectMt5       = (login, password, server, platform, metaapiToken) =>
+  req('/api/broker/mt5/connect', { method:'POST', body:JSON.stringify({login,password,server,platform,metaapiToken}) })
+export const searchMt5Servers = (q, platform='mt5') =>
+  req(`/api/broker/mt5/servers?q=${encodeURIComponent(q)}&platform=${platform}`)
 export const getMt5Positions  = ()   => req('/api/broker/mt5/positions')
 export const getMt5Status     = ()   => req('/api/broker/mt5/status')
-export const disconnectMt5    = ()   => req('/api/broker/mt5/disconnect', { method: 'DELETE' })
+export const disconnectMt5    = ()   => req('/api/broker/mt5/disconnect', { method:'DELETE' })
 
 /* ── Watchlist ── */
 export const getWatchlist        = ()       => req('/api/watchlist')
