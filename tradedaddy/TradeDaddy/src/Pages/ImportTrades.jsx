@@ -214,7 +214,9 @@ function PreviewTable({ trades }) {
             <tr key={i} style={{ borderBottom:`1px solid ${T.f}` }}>
               <td style={{ padding:'7px 12px', fontWeight:700 }}>{t.symbol}</td>
               <td style={{ padding:'7px 12px', textAlign:'right' }}>
-                <span style={{ padding:'1px 6px', borderRadius:4, fontSize:10, fontWeight:700, background:t.type==='LONG'?'rgba(46,204,138,0.12)':\'rgba(255,77,106,0.12)\', color:t.type==='LONG'?T.g:T.r }}>{t.type}</span>
+                <span style={{ padding:'1px 6px', borderRadius:4, fontSize:10, fontWeight:700, background: t.type === 'LONG'
+  ? 'rgba(46,204,138,0.12)'
+  : 'rgba(255,77,106,0.12)', color:t.type==='LONG'?T.g:T.r }}>{t.type}</span>
               </td>
               <td style={{ padding:'7px 12px', textAlign:'right', fontFamily:T.mono }}>{t.entry?.toFixed(4)}</td>
               <td style={{ padding:'7px 12px', textAlign:'right', fontFamily:T.mono }}>{t.exit?.toFixed(4)}</td>
