@@ -56,17 +56,13 @@ function ArticleCard({ article }) {
   const [open,     setOpen]     = useState(false)
   const sc = analysis ? (SENT[analysis.sentiment]||SENT.NEUTRAL) : null
 
-  const analyze = async () => {
-    if (analysis) { setOpen(v=>!v); return }
-    setLoading(true)
-    try {
-      const r = await analyzeNews(article.title, article.description)
-      setAnalysis(r); setOpen(true)
-    } catch {
-      setAnalysis({ sentiment:'NEUTRAL', impact:'LOW', affectedStocks:[], affectedSectors:[], summary:'Analysis unavailable right now.', timeframe:'unknown' })
+  useEffect(() => {
+    if (article.analysis) {
+      setAnalysis(article.analysis)
+      setLoading(false)
       setOpen(true)
-    } finally { setLoading(false) }
-  }
+    }
+  }, [article.analysis])
 
   return (
     <div style={{ background:T.card, border:`1px solid ${open?T.p+'44':T.border}`, borderRadius:16, overflow:'hidden', transition:'border-color 0.2s' }}>
@@ -79,25 +75,17 @@ function ArticleCard({ article }) {
                 {article.source}
               </div>
             )}
-            <a href={article.link} target="_blank" rel="noopener noreferrer" style={{ textDecoration:'none', color:T.t, fontSize:14, fontWeight:600, lineHeight:1.55, display:'block', transition:'color 0.15s' }}
-              onMouseEnter={e=>e.target.style.color=T.p} onMouseLeave={e=>e.target.style.color=T.t}>
+            <div role="link" onClick={() => article.link && window.open(article.link, '_blank')} style={{ textDecoration:'none', color:T.t, fontSize:14, fontWeight:600, lineHeight:1.55, display:'block', transition:'color 0.15s', cursor:'pointer' }}
+              onMouseEnter={e=>e.currentTarget.style.color=T.p} onMouseLeave={e=>e.currentTarget.style.color=T.t}>
               {article.title}
-            </a>
+            </div>
             {article.description && (
               <p style={{ margin:'6px 0 0', fontSize:12, color:T.m, lineHeight:1.6 }}>{article.description}</p>
             )}
           </div>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8, flexShrink:0 }}>
             <span style={{ fontSize:11, color:T.d, whiteSpace:'nowrap' }}>{timeAgo(article.pubDate)}</span>
-            <button onClick={analyze} disabled={loading} style={{
-              padding:'6px 14px', borderRadius:9, cursor:'pointer', fontFamily:'inherit',
-              background: analysis ? 'rgba(91,46,255,0.15)' : T.p,
-              border: analysis ? '1px solid rgba(91,46,255,0.35)' : '1px solid transparent',
-              color:'#fff', fontSize:11, fontWeight:700, whiteSpace:'nowrap',
-              opacity:loading?0.7:1, transition:'all 0.2s',
-            }}>
-              {loading ? '⟳ Analysing…' : analysis ? (open ? '▲ Hide' : '▼ Analysis') : '🤖 Analyse'}
-            </button>
+            <span style={{ fontSize:11, color: analysis ? T.g : T.m }}>{analysis ? 'AI ready' : (loading ? 'Loading…' : 'Pending')}</span>
           </div>
         </div>
       </div>
@@ -159,7 +147,25 @@ export default function News() {
     setLoading(true); setError(null)
     try {
       const d = await getNews(c)
-      setArticles(d.articles||[]); setTs(new Date())
+      const arts = d.articles || (Array.isArray(d) ? d : [])
+      setArticles(arts)
+      setTs(new Date())
+
+      // Auto-analyze all articles and attach analysis in-place
+      try {
+        const analyzed = await Promise.all(arts.map(async (a) => {
+          try {
+            const r = await analyzeNews(a.title, a.description)
+            return { ...a, analysis: r }
+          } catch {
+            return { ...a, analysis: { sentiment:'NEUTRAL', impact:'LOW', affectedStocks:[], affectedSectors:[], summary:'Analysis unavailable right now.', timeframe:'unknown' } }
+          }
+        }))
+        setArticles(analyzed)
+      } catch (e) {
+        // ignore per-article analysis failures
+      }
+
     } catch(e) { setError(e.message) } finally { setLoading(false) }
   }, [])
 
@@ -174,7 +180,7 @@ export default function News() {
         <div>
           <h1 style={{ margin:'0 0 4px', fontSize:22, fontWeight:800, letterSpacing:'-0.02em' }}>Market News</h1>
           <p style={{ margin:0, fontSize:13, color:T.m }}>
-            {articles.length} articles · Click <strong style={{ color:'rgba(255,255,255,0.7)' }}>Analyse</strong> for AI stock impact
+            {articles.length} articles · Headline analysis loads automatically for each story
             {ts && <span style={{ color:T.d }}> · {ts.toLocaleTimeString()}</span>}
           </p>
         </div>

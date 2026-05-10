@@ -87,7 +87,14 @@ export default function EconomicCalendar() {
   useEffect(() => {
     setLoading(true)
     getCalendar()
-      .then(data => setEvents(data.events||[]))
+      .then(data => {
+        let events = []
+        if (Array.isArray(data)) events = data
+        else if (data && data.events) events = data.events
+        else if (data && data.calendar) events = data.calendar
+        else if (data && data.data) events = data.data
+        setEvents(events || [])
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
