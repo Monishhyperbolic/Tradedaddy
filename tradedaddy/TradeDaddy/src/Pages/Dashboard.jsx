@@ -1,6 +1,6 @@
 /**
  * Dashboard.jsx v5 — TradeDaddy
- * Fixes: user name from auth (not hardcoded), CSV-first product flow
+ * Fixes: user name from auth (not hardcoded), streamlined product flow
  * Improvements: better UI, clearer analysis, no HF token UI
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
