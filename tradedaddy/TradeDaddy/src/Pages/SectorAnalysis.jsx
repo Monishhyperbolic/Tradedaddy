@@ -42,7 +42,8 @@ async function groqAnalyze(prompt) {
     return await groqChat(fullPrompt)
   } catch(e) {
     if (e.message.includes('loading')) return '⏳ ' + e.message
-    return `Groq analysis unavailable: ${e.message}. Try again in 30s.`
+    console.warn('Groq sector analysis failed', e)
+    return 'AI analysis temporarily unavailable. Please try again later.'
   }
 }
 
