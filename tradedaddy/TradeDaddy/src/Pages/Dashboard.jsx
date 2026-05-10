@@ -1422,7 +1422,7 @@ export default function Dashboard() {
           <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
             <div style={{ display:'flex',alignItems:'center',gap:8,padding:'9px 12px',background:'rgba(46,204,138,0.09)',border:'1px solid rgba(46,204,138,0.18)',borderRadius:12,fontSize:12 }}>
               <span style={{ width:7,height:7,borderRadius:'50%',background:T.g,display:'inline-block' }}/>
-              CSV-first workspace
+              Workspace ready
             </div>
             <button onClick={()=>setPage('journal')} style={{ padding:'10px 14px',background:T.p,border:'none',borderRadius:12,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:T.font,boxShadow:'0 10px 24px rgba(91,46,255,0.24)' }}>+ New Trade</button>
           </div>
