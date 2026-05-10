@@ -18,6 +18,7 @@ export default function App() {
         <Route path="/"          element={<Landingpage />} />
         <Route path="/auth"      element={<PublicRoute><Auth /></PublicRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="*"          element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   )

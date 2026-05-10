@@ -6,6 +6,8 @@
 const BASE = 'https://tradedaddy-api.monishpatil.workers.dev'
 let _token = null
 
+const isPlainObject = (value) => value && typeof value === 'object' && value.constructor === Object
+
 /* ── Token helpers ── */
 export const getStoredToken  = () => { if (_token) return _token; return (_token = localStorage.getItem('td_token')) }
 export const setStoredToken  = (t) => { _token = t; t ? localStorage.setItem('td_token', t) : localStorage.removeItem('td_token') }
@@ -17,17 +19,30 @@ export const isLoggedIn      = () => !!getStoredToken()
 /* ── Core fetch ── */
 const req = async (path, opts = {}) => {
   const token = getStoredToken()
+  const headers = {
+    ...(opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...opts.headers,
+  }
+  let body = opts.body
+  if (body && !(body instanceof FormData) && !(body instanceof Blob) && typeof body !== 'string') {
+    body = isPlainObject(body) ? JSON.stringify(body) : body
+  }
+  if (body instanceof FormData) delete headers['Content-Type']
   const res = await fetch(`${BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...opts.headers,
-    },
+    headers,
+    body,
     ...opts,
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
-    if (res.status === 401) { logoutUser(); window.location.href = '/auth' }
+    const err = await res.json().catch(async () => {
+      const text = await res.text().catch(() => '')
+      return { error: text || res.statusText }
+    })
+    if (res.status === 401) {
+      logoutUser()
+      if (typeof window !== 'undefined') window.location.href = '/auth'
+    }
     throw new Error(err.error || `HTTP ${res.status}`)
   }
   return res.json()
