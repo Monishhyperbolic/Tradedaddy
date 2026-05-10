@@ -67,95 +67,6 @@ function MiniBar({ pct, max }) {
   )
 }
 
-function SectorCard({ sector, onAnalyze }) {
-  const [quotes,   setQuotes]   = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [analysis, setAnalysis] = useState(null)
-  const [analyzing,setAnalyzing]= useState(false)
-  const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    let alive = true
-    const load = async () => {
-      setLoading(true)
-      try {
-        const results = await Promise.allSettled(sector.stocks.map(s => getQuote(s.s)))
-        if (!alive) return
-        const q = results.map((r,i) => r.status==='fulfilled' ? {...r.value, displayName:sector.stocks[i].n} : { displayName:sector.stocks[i].n, changePct:null, price:null, error:true })
-        setQuotes(q)
-      } catch{}
-      setLoading(false)
-    }
-    load()
-    return ()=>{alive=false}
-  }, [sector.id])
-
-  const validQuotes  = quotes.filter(q => q.changePct != null)
-  const avgChange    = validQuotes.length ? validQuotes.reduce((s,q)=>s+q.changePct,0)/validQuotes.length : 0
-  const advancers    = validQuotes.filter(q=>q.changePct>=0).length
-  const decliners    = validQuotes.filter(q=>q.changePct<0).length
-  const maxAbs       = Math.max(...validQuotes.map(q=>Math.abs(q.changePct||0)),1)
-
-  const analyze = async () => {
-    if (analysis) { setExpanded(v=>!v); return }
-    setAnalyzing(true)
-    const stockSummary = validQuotes.map(q=>`${q.displayName}: ${q.changePct>=0?'+':''}${q.changePct?.toFixed(2)}%`).join(', ')
-    const prompt = `Analyze the Indian ${sector.label} sector. Today's performance: ${stockSummary}. Average sector change: ${avgChange>=0?'+':''}${avgChange.toFixed(2)}%. ${advancers} stocks advancing, ${decliners} declining. Should an investor BUY, HOLD, or AVOID this sector today?`
-    const text = await hfAnalyze(prompt)
-    setAnalysis(text)
-    setExpanded(true)
-    setAnalyzing(false)
-  }
-
-  const sentiment = avgChange >= 1 ? 'STRONG_BULL' : avgChange >= 0 ? 'BULL' : avgChange >= -1 ? 'BEAR' : 'STRONG_BEAR'
-  const sentimentColors = { STRONG_BULL:C.g, BULL:'rgba(52,199,123,0.7)', BEAR:'rgba(255,92,92,0.7)', STRONG_BEAR:C.r }
-
-  return (
-    <div style={{ background:C.s, border:`1px solid ${expanded?sector.color+'55':C.b}`, borderRadius:18, padding:'20px 22px', transition:'border-color 0.2s', position:'relative', overflow:'hidden' }}>
-      {/* Color accent bar */}
-      <div style={{ position:'absolute',top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${sector.color},transparent)` }} />
-
-      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14 }}>
-        <div>
-          <div style={{ fontSize:16,fontWeight:800,marginBottom:4 }}>{sector.label}</div>
-          <div style={{ display:'flex',alignItems:'center',gap:8 }}>
-            {loading ? <span style={{ fontSize:12,color:C.m }}>Loading…</span> : <TrendBadge pct={avgChange} />}
-            {!loading && <span style={{ fontSize:14,fontWeight:800,color:avgChange>=0?C.g:C.r }}>{avgChange>=0?'+':''}{avgChange.toFixed(2)}%</span>}
-          </div>
-        </div>
-        <div style={{ textAlign:'right' }}>
-          <div style={{ fontSize:12,color:C.m,marginBottom:4 }}>{advancers}▲ {decliners}▼</div>
-          <button onClick={analyze} disabled={analyzing} style={{ padding:'6px 14px',background:analysis?'rgba(82,39,255,0.15)':C.p,border:`1px solid ${analysis?'rgba(82,39,255,0.3)':'transparent'}`,borderRadius:9,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:analyzing?0.7:1,whiteSpace:'nowrap' }}>
-            {analyzing?'🤖 Thinking…':analysis?(expanded?'▲ Hide':'▼ AI View'):'🤖 AI Analyse'}
-          </button>
-        </div>
-      </div>
-
-      {/* Stock bars */}
-      {!loading && (
-        <div style={{ display:'flex',flexDirection:'column',gap:6,marginBottom:12 }}>
-          {validQuotes.sort((a,b)=>Math.abs(b.changePct||0)-Math.abs(a.changePct||0)).map(q=>(
-            <div key={q.displayName}>
-              <div style={{ display:'flex',justifyContent:'space-between',fontSize:12 }}>
-                <span style={{ color:'rgba(255,255,255,0.75)',fontWeight:600 }}>{q.displayName}</span>
-                <span style={{ fontWeight:700,color:q.changePct>=0?C.g:C.r }}>{q.changePct>=0?'+':''}{q.changePct?.toFixed(2)}%</span>
-              </div>
-              <MiniBar pct={q.changePct||0} max={maxAbs} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* AI Analysis */}
-      {expanded && analysis && (
-        <div style={{ marginTop:10,padding:'12px 14px',background:`${sector.color}11`,borderRadius:12,border:`1px solid ${sector.color}33`,fontSize:13,color:'rgba(255,255,255,0.85)',lineHeight:1.65,borderLeft:`3px solid ${sector.color}` }}>
-          🤖 {analysis}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function SectorRanking({ sectors, allData }) {
   const ranked = allData
     .filter(d => d.avg != null)
@@ -193,6 +104,7 @@ export default function SectorAnalysis() {
   const [tokenSet,     setTokenSet]     = useState(!!localStorage.getItem('hf_token'))
   const [analyzing,    setAnalyzing]    = useState(false)
   const [marketSummary,setMarketSummary]= useState(null)
+  const [marketSummaryKey, setMarketSummaryKey] = useState('')
 
   // Fetch quick avg for each sector for the leaderboard
   const updateSectorAvg = (id, avg) => {
@@ -203,9 +115,9 @@ export default function SectorAnalysis() {
     })
   }
 
-  const analyzeFullMarket = async () => {
+  const analyzeFullMarket = useCallback(async (snapshot) => {
     setAnalyzing(true)
-    const summary = allData.map(d=>{
+    const summary = snapshot.map(d=>{
       const sec=SECTORS.find(s=>s.id===d.id)
       return `${sec?.label||d.id}: ${d.avg>=0?'+':''}${d.avg.toFixed(2)}%`
     }).join('; ')
@@ -213,7 +125,16 @@ export default function SectorAnalysis() {
     const text = await hfAnalyze(prompt)
     setMarketSummary(text)
     setAnalyzing(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!allData.length) return
+    const snapshot = [...allData].sort((a,b) => a.id.localeCompare(b.id))
+    const key = snapshot.map(d => `${d.id}:${Number(d.avg).toFixed(4)}`).join('|')
+    if (marketSummaryKey === key) return
+    setMarketSummaryKey(key)
+    analyzeFullMarket(snapshot)
+  }, [allData, marketSummaryKey, analyzeFullMarket])
 
   const saveToken = () => {
     if (!hfTokenInput.startsWith('hf_')) { alert('Token should start with hf_'); return }
@@ -234,11 +155,7 @@ export default function SectorAnalysis() {
             Indian equity sectors · Live NSE data · {bullish > 0 && <span style={{ color:C.g }}>{bullish} bullish</span>}{bullish>0&&bearish>0&&' · '}{bearish > 0 && <span style={{ color:C.r }}>{bearish} bearish</span>}
           </p>
         </div>
-        {allData.length > 0 && (
-          <button onClick={analyzeFullMarket} disabled={analyzing} style={{ padding:'10px 18px',background:analyzing?'rgba(82,39,255,0.4)':C.p,border:'none',borderRadius:12,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit' }}>
-            {analyzing?'🤖 Thinking…':'🤖 Full Market AI'}
-          </button>
-        )}
+        {allData.length > 0 && <div style={{ fontSize:12, color:analyzing?C.a:C.g, fontWeight:700 }}>{analyzing ? 'AI summary loading…' : 'AI summary ready'}</div>}
       </div>
 
       {/* HF Token setup */}
@@ -262,8 +179,7 @@ export default function SectorAnalysis() {
         <div>
           <SectorRanking sectors={SECTORS} allData={allData} />
           <div style={{ marginTop:16,padding:'14px 16px',background:C.s,border:`1px solid ${C.b}`,borderRadius:14,fontSize:12,color:C.m,lineHeight:1.7 }}>
-            📊 <strong style={{ color:'rgba(255,255,255,0.7)' }}>How to use:</strong> Check leaderboard for top sectors, then expand individual cards for AI analysis. Green = Buy opportunity, Red = Avoid or short-term caution.
-            <br/><br/>💡 Set your HuggingFace token above for AI sector analysis powered by Mistral 7B.
+            📊 <strong style={{ color:'rgba(255,255,255,0.7)' }}>How to use:</strong> Check leaderboard for top sectors and review the auto-loaded AI analysis on each card. Green = Buy opportunity, Red = Avoid or short-term caution.
           </div>
         </div>
       </div>
@@ -298,13 +214,18 @@ function SectorCardWrapper({ sector, onAvgUpdate }) {
   const maxAbs = Math.max(...valid.map(q=>Math.abs(q.changePct||0)),1)
   const adv = valid.filter(q=>q.changePct>=0).length, dec = valid.filter(q=>q.changePct<0).length
 
-  const analyze = async () => {
-    if (analysis){setExpanded(v=>!v);return}
+  const analyze = useCallback(async () => {
+    if (analysis || analyzing) return
     setAnalyzing(true)
     const sum = valid.map(q=>`${q.displayName}:${q.changePct>=0?'+':''}${q.changePct?.toFixed(2)}%`).join(', ')
     const text = await hfAnalyze(`Analyze Indian ${sector.label} sector. Stocks: ${sum}. Avg change: ${avg>=0?'+':''}${avg.toFixed(2)}%. Should investors BUY, HOLD or AVOID? Give specific recommendation.`)
     setAnalysis(text); setExpanded(true); setAnalyzing(false)
-  }
+  }, [analysis, analyzing, avg, valid, sector.label])
+
+  useEffect(() => {
+    if (loading || !valid.length || analysis || analyzing) return
+    analyze()
+  }, [loading, valid.length, analysis, analyzing, analyze])
 
   return (
     <div style={{ background:C.s,border:`1px solid ${expanded?sector.color+'55':C.b}`,borderRadius:18,padding:'18px 20px',transition:'border-color 0.2s',position:'relative',overflow:'hidden' }}>
@@ -324,9 +245,7 @@ function SectorCardWrapper({ sector, onAvgUpdate }) {
         </div>
         <div style={{ textAlign:'right' }}>
           {!loading&&<div style={{ fontSize:11,color:C.m,marginBottom:4 }}>{adv}▲ {dec}▼</div>}
-          <button onClick={analyze} disabled={analyzing} style={{ padding:'5px 12px',background:analysis?'rgba(82,39,255,0.15)':C.p,border:`1px solid ${analysis?'rgba(82,39,255,0.3)':'transparent'}`,borderRadius:8,color:'#fff',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:analyzing?0.7:1,whiteSpace:'nowrap' }}>
-            {analyzing?'🤖…':analysis?(expanded?'▲':'🤖 View'):'🤖 AI'}
-          </button>
+          {!loading && <div style={{ fontSize:11, color:analyzing?C.a:(analysis?C.g:C.m), fontWeight:700 }}>{analyzing ? 'AI loading…' : (analysis ? 'AI ready' : 'Queued')}</div>}
         </div>
       </div>
       {!loading&&(
