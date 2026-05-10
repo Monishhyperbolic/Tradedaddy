@@ -1,16 +1,14 @@
 /**
  * Dashboard.jsx v5 — TradeDaddy
- * Fixes: user name from auth (not hardcoded), MT5/Dhan data per-user
- * Improvements: better UI, real data in AI, no HF token UI
+ * Fixes: user name from auth (not hardcoded), CSV-first product flow
+ * Improvements: better UI, clearer analysis, no HF token UI
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { connectMt5, disconnectMt5, searchMt5Servers } from '../utils/api'
 import {
   getTrades, createTrade, updateTrade, deleteTrade,
-  getHoldings, createHolding, deleteHolding, clearHoldings,
-  uploadImage, connectDhan, getDhanHoldings, getDhanStatus, disconnectDhan,
-  getMt5Positions, getMt5Status, getQuote, getNews, getCalendar,
+  getHoldings, createHolding, deleteHolding,
+  uploadImage, getQuote,
   groqChat, getMe, auth, logoutUser,
 } from '../utils/api'
 import Scanner from './Scanner'
@@ -41,7 +39,6 @@ const NAV = [
   { badge:'CL', label:'Calendar',  id:'calendar' },
   { badge:'AI', label:'AI Chat',   id:'chat' },
   { badge:'IM', label:'Import',    id:'import' },
-  { badge:'ST', label:'Settings',  id:'settings' },
 ]
 
 const PAGE_TITLES = {
@@ -55,7 +52,6 @@ const PAGE_TITLES = {
   calendar: 'Economic Calendar',
   chat: 'AI Chat',
   import: 'Import Trades',
-  settings: 'Settings',
 }
 
 const fmtInr = (n, compact=false) => {
@@ -294,7 +290,7 @@ function DashboardHome({ trades, holdings, user }) {
               {greeting}, {firstName}.
             </h1>
             <p style={{ margin:0,fontSize:14,color:T.m,maxWidth:680,lineHeight:1.7 }}>
-              Your trade journal, broker sync, charts, and AI review live in one place. Use the dashboard to spot what is working, what is leaking edge, and what to fix next.
+              Your trade journal, CSV imports, charts, and AI review live in one place. Use the dashboard to spot what is working, what is leaking edge, and what to fix next.
             </p>
           </div>
 
@@ -520,43 +516,7 @@ function TradeCard({ trade:t, onEdit, onDelete }) {
 /* ── HOLDINGS ── */
 function HoldingsPage({ holdings, onRefresh }) {
   const [showAdd,setShowAdd]=useState(false),[form,setForm]=useState({symbol:'',qty:'',avg_price:'',sector:'',exchange:'NSE'})
-  const [saving,setSaving]=useState(false),[syncing,setSyncing]=useState(null),[msg,setMsg]=useState(null)
-  const [mt5Status,setMt5Status]=useState(null)
-
-  useEffect(()=>{ getMt5Status().then(s=>setMt5Status(s)).catch(()=>{}) },[])
-
-  const syncDhan=async()=>{
-    setSyncing('dhan');setMsg(null)
-    try{
-      const data=await getDhanHoldings()
-      const list=Array.isArray(data)?data:(data.data||[])
-      if(!list.length){setMsg({t:'w',txt:'No holdings found in Dhan.'});return}
-      await clearHoldings()
-      for(const h of list){await createHolding({symbol:h.tradingSymbol||h.symbol,qty:h.totalQty||h.quantity||1,avg_price:h.avgCostPrice||h.averagePrice||0,sector:h.sectorName||'',exchange:'NSE'})}
-      setMsg({t:'ok',txt:`✅ Synced ${list.length} holdings from Dhan`});onRefresh()
-    }catch(e){setMsg({t:'err',txt:e.message.includes('not connected')?'❌ Dhan not connected. Go to Settings → Brokers first.':('❌ '+e.message)})}
-    finally{setSyncing(null)}
-  }
-  const syncMt5=async()=>{
-    setSyncing('mt5');setMsg(null)
-    try{
-      const data=await getMt5Positions()
-      if(!data.connected){setMsg({t:'w',txt:'⚠ MT5 not connected. Go to Settings → Brokers to connect your account.'});return}
-      const pos=data.positions||[]
-      if(!pos.length){setMsg({t:'w',txt:'✓ MT5 connected but no open positions right now.'});return}
-      for(const p of pos){
-        await createHolding({
-          symbol:p.symbol,qty:p.volume,avg_price:p.openPrice,
-          ltp:p.currentPrice||p.openPrice,pnl:p.profit||0,
-          sector:'Forex/Commodity',exchange:'MT5'
-        })
-      }
-      const bal=data.balance?`Balance: ${data.currency||'$'}${(+data.balance).toFixed(2)}`:''
-      setMsg({t:'ok',txt:`✅ Synced ${pos.length} MT5 position(s). ${bal}`})
-      onRefresh()
-    }catch(e){setMsg({t:'err',txt:`❌ ${e.message}`})}
-    finally{setSyncing(null)}
-  }
+  const [saving,setSaving]=useState(false)
 
   const handleAdd=async()=>{
     if(!form.symbol||!form.qty||!form.avg_price)return;setSaving(true)
@@ -564,53 +524,15 @@ function HoldingsPage({ holdings, onRefresh }) {
   }
 
   const totalVal = holdings.reduce((s,h)=>s+(h.qty||0)*(h.avg_price||0),0)
-  const msgStyle = { ok:'rgba(46,204,138,0.08)', w:'rgba(245,166,35,0.08)', err:'rgba(255,77,106,0.08)' }
-  const msgBorder = { ok:'rgba(46,204,138,0.25)', w:'rgba(245,166,35,0.25)', err:'rgba(255,77,106,0.25)' }
-
   return (
     <div>
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20 }}>
         <div>
           <h1 style={{ margin:'0 0 4px',fontSize:22,fontWeight:800,letterSpacing:'-0.02em' }}>Holdings</h1>
-          <p style={{ margin:0,fontSize:13,color:T.m }}>{holdings.length} positions · Cost {fmtInr(totalVal,true)}</p>
+          <p style={{ margin:0,fontSize:13,color:T.m }}>{holdings.length} positions · Cost {fmtInr(totalVal,true)} · CSV and manual entry only</p>
         </div>
         <button onClick={()=>setShowAdd(!showAdd)} style={{ padding:'10px 18px',background:T.p,border:'none',borderRadius:12,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:T.font }}>+ Add</button>
       </div>
-
-      {/* Broker sync cards */}
-      <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:18 }}>
-        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'16px 18px' }}>
-          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
-            <div>
-              <div style={{ fontWeight:700,fontSize:14,marginBottom:3 }}>🏦 Dhan — NSE/BSE</div>
-              <div style={{ fontSize:11,color:T.d }}>Configure in Settings → Brokers</div>
-            </div>
-            <button onClick={syncDhan} disabled={!!syncing} style={{ padding:'8px 16px',background:syncing==='dhan'?'rgba(91,46,255,0.4)':T.p,border:'none',borderRadius:9,color:'#fff',fontSize:12,fontWeight:700,cursor:syncing?'not-allowed':'pointer',fontFamily:T.font }}>
-              {syncing==='dhan'?'⟳ Syncing…':'⟳ Sync Holdings'}
-            </button>
-          </div>
-        </div>
-        <div style={{ background:T.card,border:`1px solid ${mt5Status?.connected?'rgba(46,204,138,0.3)':T.border}`,borderRadius:16,padding:'16px 18px' }}>
-          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
-            <div>
-              <div style={{ fontWeight:700,fontSize:14,display:'flex',alignItems:'center',gap:8 }}>
-                📈 MetaTrader 5
-                {mt5Status?.connected&&<span style={{ fontSize:10,color:T.g,background:'rgba(46,204,138,0.1)',padding:'1px 7px',borderRadius:999 }}>● Connected</span>}
-                {!mt5Status?.connected&&<span style={{ fontSize:10,color:T.d }}>Not connected</span>}
-              </div>
-              <div style={{ fontSize:11,color:T.d }}>
-                {mt5Status?.connected?`${mt5Status.login||''}@${mt5Status.server||''} · Balance: ${mt5Status.currency||'$'}${mt5Status.balance?.toFixed(2)||'—'}`:'Connect in Settings → Brokers'}
-              </div>
-            </div>
-            <button onClick={syncMt5} disabled={!!syncing||!mt5Status?.connected}
-              style={{ padding:'7px 14px',background:!mt5Status?.connected?'rgba(255,255,255,0.04)':syncing==='mt5'?'rgba(46,204,138,0.3)':T.g,border:`1px solid ${!mt5Status?.connected?T.border:'transparent'}`,borderRadius:10,color:!mt5Status?.connected?T.d:'#fff',fontSize:12,fontWeight:700,cursor:(syncing||!mt5Status?.connected)?'not-allowed':'pointer',fontFamily:T.font }}>
-              {syncing==='mt5'?'Syncing…':'⟳ Sync Positions'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {msg && <div style={{ padding:'10px 14px',background:msgStyle[msg.t],border:`1px solid ${msgBorder[msg.t]}`,borderRadius:11,fontSize:13,color:'#fff',marginBottom:14 }}>{msg.txt}</div>}
 
       {showAdd && (
         <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:'16px 18px',marginBottom:16 }}>
@@ -634,9 +556,9 @@ function HoldingsPage({ holdings, onRefresh }) {
 
       {holdings.length===0 ? (
         <div style={{ textAlign:'center',padding:'70px 0',color:T.m }}>
-          <div style={{ fontSize:36,marginBottom:12 }}>💼</div>
+          <div style={{ width:48,height:48,margin:'0 auto 12px',borderRadius:16,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,color:'#fff',fontSize:14,fontWeight:800,letterSpacing:'0.08em' }}>HD</div>
           <div style={{ fontSize:15 }}>No holdings yet</div>
-          <div style={{ fontSize:12,color:T.d,marginTop:4 }}>Sync from Dhan/MT5 or add manually above</div>
+          <div style={{ fontSize:12,color:T.d,marginTop:4 }}>Add manually or import from CSV above</div>
         </div>
       ) : (
         <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:'hidden' }}>
@@ -677,7 +599,7 @@ function HoldingsPage({ holdings, onRefresh }) {
 function ChatPage({ trades, holdings }) {
   const [messages,setMessages]=useState([{
     role:'assistant',
-    text:`Hi! I'm your TradeDaddy AI powered by Groq Llama 3.3 70B.\n\nI have full access to your portfolio:\n• ${holdings.length} holdings\n• ${trades.length} trades logged\n• Total PnL: ${fmtInr(trades.reduce((s,t)=>s+(t.pnl||0),0))}\n• Win rate: ${trades.length>0?Math.round(trades.filter(t=>t.pnl>0).length/trades.length*100):0}%\n\nAsk me anything — from "why am I losing money?" to "how does RBI policy affect my HDFC Bank position?"`
+    text:`Hi! I'm your TradeDaddy AI.\n\nI have full access to your portfolio:\n• ${holdings.length} holdings\n• ${trades.length} trades logged\n• Total PnL: ${fmtInr(trades.reduce((s,t)=>s+(t.pnl||0),0))}\n• Win rate: ${trades.length>0?Math.round(trades.filter(t=>t.pnl>0).length/trades.length*100):0}%\n\nAsk me anything — from "why am I losing money?" to "how does RBI policy affect my HDFC Bank position?"`
   }])
   const [input,setInput]=useState(''),[loading,setLoading]=useState(false),[liveData,setLiveData]=useState({})
   const bottomRef=useRef()
@@ -756,7 +678,7 @@ Repeat loss symbols: ${[...new Set(trades.filter(t=>t.pnl<0).map(t=>t.symbol))].
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16 }}>
         <div>
           <h1 style={{ margin:'0 0 4px',fontSize:22,fontWeight:800,letterSpacing:'-0.02em' }}>AI Chat</h1>
-          <p style={{ margin:0,fontSize:13,color:T.m }}>Groq Llama 3.3 70B · Live portfolio context · {Object.keys(liveData).length} live quotes loaded</p>
+          <p style={{ margin:0,fontSize:13,color:T.m }}>Live portfolio context · {Object.keys(liveData).length} live quotes loaded</p>
         </div>
         {Object.keys(liveData).length > 0 && (
           <div style={{ padding:'6px 12px',background:'rgba(46,204,138,0.08)',border:'1px solid rgba(46,204,138,0.2)',borderRadius:9,fontSize:11,color:T.g }}>
@@ -1276,7 +1198,7 @@ function Mt5SettingsCard() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: status?.connected ? 0 : 16 }}>
         <div>
           <div style={{ fontSize:15, fontWeight:700, display:'flex', alignItems:'center', gap:9 }}>
-            📈 MetaTrader 5
+            CSV Import
             {status?.connected && <span style={{ fontSize:11, color:T.g, fontWeight:600, padding:'2px 9px', background:'rgba(46,204,138,0.1)', borderRadius:999 }}>● Connected</span>}
           </div>
           <div style={{ fontSize:12, color:T.d, marginTop:3 }}>
@@ -1392,126 +1314,7 @@ function Mt5SettingsCard() {
 
 
 /* ── SETTINGS ── */
-function SettingsPage({ onLogout, user }) {
-  const [dhanForm,setDhanForm]=useState({clientId:'',accessToken:''})
-  const [dhanStat,setDhanStat]=useState(null),[dhanMsg,setDhanMsg]=useState(null),[saving,setSaving]=useState(false)
-
-  useEffect(()=>{ getDhanStatus().then(s=>setDhanStat(s)).catch(()=>{}) },[])
-
-  const connectDhanBroker=async()=>{
-    if(!dhanForm.clientId||!dhanForm.accessToken){setDhanMsg({t:'err',txt:'Both fields required'});return}
-    setSaving(true);setDhanMsg(null)
-    try{
-      await connectDhan(dhanForm.clientId,dhanForm.accessToken)
-      setDhanMsg({t:'ok',txt:'✅ Dhan connected! Go to Holdings → Sync Holdings.'})
-      setDhanStat({connected:true,clientId:`****${dhanForm.clientId.slice(-4)}`})
-      setDhanForm({clientId:'',accessToken:''})
-    }catch(e){setDhanMsg({t:'err',txt:'❌ '+e.message})}finally{setSaving(false)}
-  }
-
-  const inp=(label,name,type='text',ph='',mono=false)=>(
-    <div>
-      <label style={{ display:'block',fontSize:10,fontWeight:700,color:T.d,marginBottom:5,textTransform:'uppercase',letterSpacing:'0.07em' }}>{label}</label>
-      <input type={type} value={dhanForm[name]} onChange={e=>setDhanForm(f=>({...f,[name]:e.target.value}))} placeholder={ph}
-        style={{ width:'100%',padding:'10px 12px',background:'rgba(255,255,255,0.06)',border:`1px solid ${T.border}`,borderRadius:9,color:'#fff',fontSize:13,outline:'none',fontFamily:mono?T.mono:T.font,boxSizing:'border-box' }}
-        onFocus={e=>e.target.style.borderColor=T.p} onBlur={e=>e.target.style.borderColor=T.border}/>
-    </div>
-  )
-
-  return (
-    <div>
-      <h1 style={{ margin:'0 0 4px',fontSize:22,fontWeight:800,letterSpacing:'-0.02em' }}>Settings</h1>
-      <p style={{ margin:'0 0 24px',fontSize:13,color:T.m }}>Configure broker connections · Each user has their own isolated credentials</p>
-
-      {/* User info */}
-      <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'18px 20px',marginBottom:18,maxWidth:520 }}>
-        <div style={{ display:'flex',alignItems:'center',gap:14 }}>
-          <div style={{ width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${T.p},#9B59B6)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:700,color:'#fff' }}>
-            {(user?.name||'?')[0].toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontSize:15,fontWeight:700 }}>{user?.name||'Trader'}</div>
-            <div style={{ fontSize:12,color:T.m }}>{user?.email||''}</div>
-          </div>
-          <button onClick={onLogout} style={{ marginLeft:'auto',padding:'8px 16px',background:'rgba(255,77,106,0.1)',border:'1px solid rgba(255,77,106,0.25)',borderRadius:9,color:T.r,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:T.font }}>Sign Out</button>
-        </div>
-      </div>
-
-      {/* Dhan */}
-      <div style={{ background:T.card,border:`1px solid ${dhanStat?.connected?'rgba(46,204,138,0.3)':T.border}`,borderRadius:16,padding:'20px 22px',marginBottom:18,maxWidth:520 }}>
-        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14 }}>
-          <div>
-            <div style={{ fontSize:15,fontWeight:700,display:'flex',alignItems:'center',gap:10 }}>
-              🏦 Dhan Broker
-              {dhanStat?.connected && <span style={{ fontSize:11,color:T.g,fontWeight:600,padding:'2px 9px',background:'rgba(46,204,138,0.1)',borderRadius:999 }}>● Connected {dhanStat.clientId}</span>}
-            </div>
-            <div style={{ fontSize:12,color:T.d,marginTop:3 }}>
-              Get credentials at <a href="https://dhanhq.co" target="_blank" style={{ color:T.p }}>dhanhq.co</a> → API Access · <strong style={{ color:'rgba(255,255,255,0.6)' }}>Your credentials are stored privately, per-user</strong>
-            </div>
-          </div>
-          {dhanStat?.connected && <button onClick={async()=>{await disconnectDhan();setDhanStat({connected:false})}} style={{ padding:'6px 13px',background:'rgba(255,77,106,0.1)',border:'1px solid rgba(255,77,106,0.2)',borderRadius:8,color:T.r,fontSize:12,cursor:'pointer',fontFamily:T.font }}>Disconnect</button>}
-        </div>
-        {!dhanStat?.connected && (
-          <div style={{ display:'flex',flexDirection:'column',gap:11 }}>
-            {inp('Client ID','clientId','text','Your Dhan Client ID',true)}
-            {inp('Access Token','accessToken','password','Access token from Dhan portal',true)}
-            <button onClick={connectDhanBroker} disabled={saving} style={{ padding:'11px 0',background:T.p,border:'none',borderRadius:11,color:'#fff',fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:T.font,opacity:saving?0.7:1 }}>
-              {saving?'Connecting…':'Connect Dhan'}
-            </button>
-          </div>
-        )}
-        {dhanMsg && <div style={{ marginTop:11,padding:'9px 13px',background:dhanMsg.t==='ok'?'rgba(46,204,138,0.08)':'rgba(255,77,106,0.08)',border:`1px solid ${dhanMsg.t==='ok'?'rgba(46,204,138,0.25)':'rgba(255,77,106,0.25)'}`,borderRadius:10,fontSize:13 }}>{dhanMsg.txt}</div>}
-      </div>
-
-      {/* MT5 — Recommended: CSV Import | Alternative: MetaApi live */}
-      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, padding:'20px 22px', marginBottom:18, maxWidth:520 }}>
-        <div style={{ fontSize:15, fontWeight:700, marginBottom:12 }}>📈 MetaTrader 5</div>
-
-        {/* Recommended */}
-        <div style={{ background:'rgba(46,204,138,0.07)', border:'1px solid rgba(46,204,138,0.2)', borderRadius:12, padding:'14px 16px', marginBottom:14 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-            <span style={{ fontSize:14 }}>⭐</span>
-            <div style={{ fontSize:13, fontWeight:700, color:T.g }}>Recommended: Import Trade History CSV</div>
-          </div>
-          <div style={{ fontSize:12, color:T.m, lineHeight:1.65, marginBottom:10 }}>
-            Works with <strong style={{ color:'rgba(255,255,255,0.75)' }}>any broker worldwide</strong> — no server name required, no API keys, no compatibility issues.
-          </div>
-          <div style={{ fontSize:11, color:T.d, marginBottom:10 }}>
-            MT5: <strong style={{ color:'rgba(255,255,255,0.5)' }}>View → Terminal → Account History → right-click → Save as Report (HTML or CSV)</strong>
-          </div>
-          <button onClick={() => window.dispatchEvent(new CustomEvent('td:navigate', {detail:'import'}))}
-            style={{ width:'100%', padding:'10px 0', background:T.g, border:'none', borderRadius:10, color:'#000', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:T.font }}>
-            ⬆ Go to Import Trades
-          </button>
-        </div>
-
-        {/* Alternative: MetaApi */}
-        <details>
-          <summary style={{ fontSize:12, color:T.d, cursor:'pointer', userSelect:'none', padding:'2px 0' }}>
-            ▸ Alternative: Live MT5 connection via MetaApi (experimental — not all brokers supported)
-          </summary>
-          <div style={{ marginTop:14 }}>
-            <Mt5SettingsCard/>
-          </div>
-        </details>
-      </div>
-
-      {/* Groq AI */}
-      <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'20px 22px',maxWidth:520 }}>
-        <div style={{ fontSize:15,fontWeight:700,marginBottom:8 }}>🤖 AI Configuration — Groq</div>
-        <div style={{ fontSize:13,color:T.m,lineHeight:1.7,marginBottom:10 }}>
-          TradeDaddy uses <strong style={{ color:'rgba(255,255,255,0.7)' }}>Groq llama-3.3-70b-versatile</strong> for all AI features. It's free for up to 14,400 requests/day.
-        </div>
-        <div style={{ background:'rgba(255,255,255,0.03)',border:`1px solid ${T.f}`,borderRadius:11,padding:'12px 14px',fontSize:13,color:T.m }}>
-          <strong style={{ color:'rgba(255,255,255,0.6)' }}>Setup:</strong> Go to <a href="https://console.groq.com" target="_blank" style={{ color:T.p }}>console.groq.com</a> → API Keys → Create key → run:
-          <code style={{ display:'block',marginTop:7,padding:'8px 12px',background:'rgba(255,255,255,0.05)',borderRadius:8,fontSize:12,color:'#C084FC',fontFamily:T.mono }}>
-            wrangler secret put GROQ_API_KEY
-          </code>
-        </div>
-      </div>
-    </div>
-  )
-}
+function SettingsPage() { return null }
 
 /* ── ROOT ── */
 export default function Dashboard() {
@@ -1562,7 +1365,6 @@ export default function Dashboard() {
     calendar:  <EconomicCalendar/>,
     chat:      <ChatPage trades={trades} holdings={holdings}/>,
     import:    <ImportTrades onImportDone={loadAll}/>,
-    settings:  <SettingsPage onLogout={handleLogout} user={user}/>,
   }
 
   return (
@@ -1620,7 +1422,7 @@ export default function Dashboard() {
           <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
             <div style={{ display:'flex',alignItems:'center',gap:8,padding:'9px 12px',background:'rgba(46,204,138,0.09)',border:'1px solid rgba(46,204,138,0.18)',borderRadius:12,fontSize:12 }}>
               <span style={{ width:7,height:7,borderRadius:'50%',background:T.g,display:'inline-block' }}/>
-              Auto approval ready
+              CSV-first workspace
             </div>
             <button onClick={()=>setPage('journal')} style={{ padding:'10px 14px',background:T.p,border:'none',borderRadius:12,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:T.font,boxShadow:'0 10px 24px rgba(91,46,255,0.24)' }}>+ New Trade</button>
           </div>

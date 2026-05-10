@@ -63,7 +63,7 @@ function ArticleCard({ article }) {
       const r = await analyzeNews(article.title, article.description)
       setAnalysis(r); setOpen(true)
     } catch {
-      setAnalysis({ sentiment:'NEUTRAL', impact:'LOW', affectedStocks:[], affectedSectors:[], summary:'Analysis unavailable. Check GROQ_API_KEY in worker secrets.', timeframe:'unknown' })
+      setAnalysis({ sentiment:'NEUTRAL', impact:'LOW', affectedStocks:[], affectedSectors:[], summary:'Analysis unavailable right now.', timeframe:'unknown' })
       setOpen(true)
     } finally { setLoading(false) }
   }
@@ -207,8 +207,8 @@ export default function News() {
 
       {/* Info bar */}
       <div style={{ padding:'10px 14px', background:'rgba(91,46,255,0.07)', border:'1px solid rgba(91,46,255,0.18)', borderRadius:11, fontSize:12, color:T.m, marginBottom:18, display:'flex', alignItems:'center', gap:10 }}>
-        <span style={{ fontSize:16 }}>🤖</span>
-        <span>AI analysis powered by <strong style={{ color:'rgba(255,255,255,0.75)' }}>Groq Llama 3.3 70B</strong> — instant, grounded analysis of each headline. Requires <code style={{ background:'rgba(255,255,255,0.08)', padding:'1px 5px', borderRadius:4, fontSize:11 }}>GROQ_API_KEY</code> in worker secrets.</span>
+        <span style={{ width:20,height:20,borderRadius:7,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.06)',border:`1px solid ${T.border}`,fontSize:11,fontWeight:800,color:'#fff' }}>AI</span>
+        <span>Headline analysis is available inline for each story.</span>
       </div>
 
       {error && (

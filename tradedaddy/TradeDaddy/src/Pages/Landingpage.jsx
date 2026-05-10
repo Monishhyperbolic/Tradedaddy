@@ -14,7 +14,7 @@ const highlights = [
 
 const featureLines = [
   'Trade journaling with emotion and discipline tracking',
-  'Broker sync for Dhan and MT5 without manual copying',
+  'CSV import for trades and holdings without manual copying',
   'AI prompts that use your live portfolio context',
   'A cleaner workspace that works on desktop and mobile',
 ]
@@ -109,7 +109,7 @@ function Landingpage() {
                 <span className="panel-badge">Built for active traders</span>
                 <h2 style={{ marginTop: 12 }}>A calmer view of performance</h2>
               </div>
-              <span className="auth-pill">Live journal + broker sync</span>
+              <span className="auth-pill">Live journal + CSV import</span>
             </div>
 
             <p className="panel-quote">
@@ -153,7 +153,7 @@ function Landingpage() {
               </p>
               <ul>
                 <li>Log trades with notes, emotions, screenshots, and discipline scores.</li>
-                <li>Sync holdings from connected brokers instead of maintaining duplicates.</li>
+                <li>Import holdings and trades from CSV instead of maintaining duplicates.</li>
                 <li>Keep the dashboard readable on desktop and mobile so the workflow stays fast.</li>
               </ul>
             </div>

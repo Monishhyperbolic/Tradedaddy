@@ -1,12 +1,6 @@
 /**
  * ImportTrades.jsx — TradeDaddy
- * Works with ANY MT5 broker and Dhan — no API/server issues
- * Supports: MT5 HTML Report, MT5 CSV, Dhan CSV
- *
- * How to export from MT5:
- *   Terminal → Account History tab → right-click → Save as Report (HTML or CSV)
- * How to export from Dhan:
- *   Reports → Trade Book → Download CSV
+ * CSV-only import flow for trade exports.
  */
 import { useState, useRef, useCallback } from 'react'
 import { createTrade } from '../utils/api'
@@ -123,8 +117,8 @@ function matchDeals(deals) {
   return trades
 }
 
-/* ── Parse Dhan CSV ── */
-function parseDhanCsv(csv) {
+/* ── Parse CSV Import ── */
+function parseCsvImport(csv) {
   const lines = csv.split('\n').map(l => l.trim()).filter(Boolean)
   if (!lines.length) return []
 
@@ -167,9 +161,9 @@ function parseDhanCsv(csv) {
     if (matching?.length) {
       const b = matching.shift()
       const pnl = (s.price - b.price) * Math.min(b.qty, s.qty)
-      trades.push({ symbol:s.symbol, type:'LONG', entry:b.price, exit:s.price, qty:Math.min(b.qty,s.qty), pnl:+pnl.toFixed(2), date:b.date||s.date, setup:'Dhan Import', notes:'Imported from Dhan CSV', emotion:'😐', discipline:70 })
+      trades.push({ symbol:s.symbol, type:'LONG', entry:b.price, exit:s.price, qty:Math.min(b.qty,s.qty), pnl:+pnl.toFixed(2), date:b.date||s.date, setup:'CSV Import', notes:'Imported from CSV', emotion:'😐', discipline:70 })
     } else {
-      trades.push({ symbol:s.symbol, type:'SHORT', entry:s.price, exit:s.price, qty:s.qty, pnl:0, date:s.date, setup:'Dhan Import', notes:'Imported from Dhan (sell-only leg)', emotion:'😐', discipline:70 })
+      trades.push({ symbol:s.symbol, type:'SHORT', entry:s.price, exit:s.price, qty:s.qty, pnl:0, date:s.date, setup:'CSV Import', notes:'Imported from CSV (sell-only leg)', emotion:'😐', discipline:70 })
     }
   })
   return trades
@@ -189,7 +183,7 @@ function parseDate(raw) {
 function detectFormat(text) {
   if (text.includes('<html') || text.includes('<table') || text.includes('<tr')) return 'mt5-html'
   const lower = text.toLowerCase()
-  if (lower.includes('trade date') || lower.includes('tradingsymbol') || lower.includes('dhan')) return 'dhan-csv'
+  if (lower.includes('trade date') || lower.includes('tradingsymbol') || lower.includes('symbol')) return 'csv-import'
   if (lower.includes('deal') || lower.includes('direction') || lower.includes('commission')) return 'mt5-csv'
   // Try to detect by first data line
   const lines = text.split('\n').filter(Boolean)
@@ -254,8 +248,8 @@ export default function ImportTrades({ onImportDone }) {
       let parsed = []
       if (fmt === 'mt5-html') parsed = parseMt5Html(text)
       else if (fmt === 'mt5-csv') parsed = parseMt5Csv(text)
-      else if (fmt === 'dhan-csv') parsed = parseDhanCsv(text)
-      else { setError('Could not detect file format. Supported: MT5 HTML report, MT5 CSV, Dhan CSV.'); return }
+      else if (fmt === 'csv-import') parsed = parseCsvImport(text)
+      else { setError('Could not detect file format. Supported: MT5 HTML report, MT5 CSV, CSV import.'); return }
 
       if (!parsed.length) { setError('No trades found in file. Make sure you exported Account History (not open positions).'); return }
       setTrades(parsed)
@@ -283,9 +277,9 @@ export default function ImportTrades({ onImportDone }) {
   }
 
   const FORMAT_LABELS = {
-    'mt5-html': '✅ MT5 HTML Report',
-    'mt5-csv':  '✅ MT5 CSV Export',
-    'dhan-csv': '✅ Dhan Trade Book CSV',
+      'mt5-html': '✅ CSV export',
+      'mt5-csv':  '✅ CSV export',
+      'csv-import': '✅ CSV export',
     'unknown':  '⚠ Unknown format',
   }
 
@@ -293,47 +287,22 @@ export default function ImportTrades({ onImportDone }) {
     <div style={{ fontFamily:T.font }}>
       <h1 style={{ margin:'0 0 6px', fontSize:22, fontWeight:800, letterSpacing:'-0.02em' }}>Import Trades</h1>
       <p style={{ margin:'0 0 24px', fontSize:13, color:T.m }}>
-        Works with <strong style={{ color:'#fff' }}>any broker</strong> — export from MT5 or Dhan, drag & drop here.
+        Export your trades as CSV and drag & drop the file here.
       </p>
 
       {/* How to export instructions */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:24 }}>
-        {[
-          {
-            icon:'📈', title:'From MetaTrader 5 (any broker)',
-            steps:[
-              'Open MT5 → View → Terminal (Ctrl+T)',
-              'Click the "Account History" tab',
-              'Right-click anywhere in the table',
-              'Select "Save as Report" → HTML or CSV',
-              'Upload the file below',
-            ],
-            color:'#5B2EFF'
-          },
-          {
-            icon:'🏦', title:'From Dhan',
-            steps:[
-              'Log into Dhan web/app',
-              'Go to Reports → Trade Book',
-              'Set date range',
-              'Click "Download" → CSV',
-              'Upload the file below',
-            ],
-            color:'#F5A623'
-          },
-        ].map(s => (
-          <div key={s.title} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:'16px 18px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:12 }}>
-              <span style={{ fontSize:20 }}>{s.icon}</span>
-              <div style={{ fontSize:13, fontWeight:700 }}>{s.title}</div>
-            </div>
-            <ol style={{ margin:0, padding:'0 0 0 16px', display:'flex', flexDirection:'column', gap:5 }}>
-              {s.steps.map((step,i) => (
-                <li key={i} style={{ fontSize:12, color:T.m, lineHeight:1.55 }}>{step}</li>
-              ))}
-            </ol>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:14, marginBottom:24 }}>
+        <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:14, padding:'16px 18px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:12 }}>
+            <div style={{ width:28,height:28,borderRadius:10,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,fontSize:12,fontWeight:800,color:'#fff' }}>CSV</div>
+            <div style={{ fontSize:13, fontWeight:700 }}>Export a trade history CSV</div>
           </div>
-        ))}
+          <ol style={{ margin:0, padding:'0 0 0 16px', display:'flex', flexDirection:'column', gap:5 }}>
+            <li style={{ fontSize:12, color:T.m, lineHeight:1.55 }}>Open your broker platform or back office</li>
+            <li style={{ fontSize:12, color:T.m, lineHeight:1.55 }}>Export your trade history as CSV</li>
+            <li style={{ fontSize:12, color:T.m, lineHeight:1.55 }}>Upload the file below</li>
+          </ol>
+        </div>
       </div>
 
       {/* Drop zone */}
@@ -343,13 +312,13 @@ export default function ImportTrades({ onImportDone }) {
         onDrop={onDrop}
         onClick={()=>fileRef.current?.click()}
         style={{ border:`2px dashed ${dragOver?T.p:T.border}`, borderRadius:16, padding:'40px 24px', textAlign:'center', cursor:'pointer', background:dragOver?'rgba(91,46,255,0.07)':T.card, transition:'all 0.2s' }}>
-        <input ref={fileRef} type="file" accept=".html,.htm,.csv,.txt" style={{ display:'none' }} onChange={e=>e.target.files[0]&&processFile(e.target.files[0])}/>
+        <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display:'none' }} onChange={e=>e.target.files[0]&&processFile(e.target.files[0])}/>
         <div style={{ fontSize:36, marginBottom:12 }}>{dragOver?'⬇':'📂'}</div>
         <div style={{ fontSize:15, fontWeight:700, marginBottom:6 }}>
           {file ? file.name : 'Drop your export file here'}
         </div>
         <div style={{ fontSize:12, color:T.d }}>
-          {file ? 'Click to choose a different file' : 'Accepts MT5 HTML report, MT5 CSV, Dhan CSV · Click or drag & drop'}
+          {file ? 'Click to choose a different file' : 'Accepts CSV exports · Click or drag & drop'}
         </div>
       </div>
 
@@ -401,7 +370,7 @@ export default function ImportTrades({ onImportDone }) {
 
       <div style={{ marginTop:24, padding:'12px 14px', background:T.card, border:`1px solid ${T.border}`, borderRadius:12, fontSize:11, color:T.d, lineHeight:1.7 }}>
         🔒 Your trade data is processed in the browser and stored in your private Cloudflare D1 database.
-        Supported formats: MT5 HTML Report, MT5 CSV Export, Dhan Trade Book CSV. Works with <strong style={{ color:'rgba(255,255,255,0.5)' }}>any MT5 broker</strong> — no API key or server connection needed.
+        Supported formats: CSV exports only. No API key or server connection needed.
       </div>
     </div>
   )
