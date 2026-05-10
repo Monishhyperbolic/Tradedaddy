@@ -110,7 +110,7 @@ export default function Auth() {
         <div className="auth-card">
           <div style={{ textAlign:'center', marginBottom:32 }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:10, marginBottom:10 }}>
-              <div style={{ width:38, height:38, background:'linear-gradient(135deg, #5B2EFF, #9B59B6)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📊</div>
+              <div style={{ width:38, height:38, background:'linear-gradient(135deg, #5B2EFF, #9B59B6)', borderRadius:12, display:'grid', placeItems:'center', fontSize:12, fontWeight:800, letterSpacing:'0.08em', color:'#fff' }}>TD</div>
               <span style={{ fontSize:28, fontWeight:900, letterSpacing:'-0.04em', color:'#fff' }}>
                 Trade<span style={{ color:T.p }}>Daddy</span>
               </span>
@@ -137,7 +137,7 @@ export default function Auth() {
 
             {error && (
               <div style={{ padding:'11px 14px', background:'rgba(255,77,106,0.09)', border:'1px solid rgba(255,77,106,0.22)', borderRadius:11, fontSize:13, color:T.r, display:'flex', alignItems:'center', gap:8 }}>
-                <span>⚠</span> {error}
+                <span style={{ width:18,height:18,borderRadius:6,display:'grid',placeItems:'center',background:'rgba(255,77,106,0.16)',fontSize:11,fontWeight:800 }}>!</span> {error}
               </div>
             )}
 
@@ -150,9 +150,9 @@ export default function Auth() {
 
           <div style={{ marginTop:24 }} className="auth-meta">
             {[
-              { icon:'🔒', text:'D1 Database' },
-              { icon:'☁', text:'Cloudflare Workers' },
-              { icon:'🔑', text:'JWT Auth' },
+              { icon:'DB', text:'D1 Database' },
+              { icon:'WK', text:'Cloudflare Workers' },
+              { icon:'JW', text:'JWT Auth' },
             ].map(({ icon, text }) => (
               <div key={text} className="auth-pill">
                 {icon} {text}

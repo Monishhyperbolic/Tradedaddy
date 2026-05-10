@@ -31,17 +31,17 @@ const T = {
 
 
 const NAV = [
-  { icon:'⬡',  label:'Dashboard', id:'dashboard' },
-  { icon:'📋', label:'Journal',   id:'journal' },
-  { icon:'💼', label:'Holdings',  id:'holdings' },
-  { icon:'🔍', label:'Scanner',   id:'scanner' },
-  { icon:'📊', label:'Analytics', id:'analytics' },
-  { icon:'📈', label:'Sectors',   id:'sectors' },
-  { icon:'📰', label:'News',      id:'news' },
-  { icon:'📅', label:'Calendar',  id:'calendar' },
-  { icon:'🤖', label:'AI Chat',   id:'chat' },
-  { icon:'⬆',  label:'Import',    id:'import' },
-  { icon:'⚙',  label:'Settings',  id:'settings' },
+  { badge:'OV', label:'Dashboard', id:'dashboard' },
+  { badge:'JR', label:'Journal',   id:'journal' },
+  { badge:'HD', label:'Holdings',  id:'holdings' },
+  { badge:'SC', label:'Scanner',   id:'scanner' },
+  { badge:'AN', label:'Analytics', id:'analytics' },
+  { badge:'SE', label:'Sectors',   id:'sectors' },
+  { badge:'NW', label:'News',      id:'news' },
+  { badge:'CL', label:'Calendar',  id:'calendar' },
+  { badge:'AI', label:'AI Chat',   id:'chat' },
+  { badge:'IM', label:'Import',    id:'import' },
+  { badge:'ST', label:'Settings',  id:'settings' },
 ]
 
 const PAGE_TITLES = {
@@ -73,7 +73,8 @@ function EquityChart({ trades }) {
   sorted.forEach(t => curve.push(+(curve[curve.length-1]+(t.pnl||0)).toFixed(2)))
   if (curve.length < 2) return (
     <div style={{ height:110, display:'flex', alignItems:'center', justifyContent:'center', color:T.d, fontSize:13, flexDirection:'column', gap:6 }}>
-      <span style={{ fontSize:28 }}>📈</span>Log trades to build your equity curve
+      <div style={{ width:36,height:36,borderRadius:12,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,color:'#fff',fontSize:12,fontWeight:800,letterSpacing:'0.08em' }}>EC</div>
+      Log trades to build your equity curve
     </div>
   )
   const W=540,H=110,P=14,min=Math.min(...curve),max=Math.max(...curve),range=max-min||1
@@ -147,6 +148,22 @@ function Stat({ label, value, sub, color, trend }) {
       <p style={{ margin:'0 0 4px', fontSize:10, color:T.d, textTransform:'uppercase', letterSpacing:'0.08em', fontWeight:700 }}>{label}</p>
       <p style={{ margin:'0 0 3px', fontSize:22, fontWeight:800, color:color||'#fff', letterSpacing:'-0.02em', fontFamily:T.mono }}>{value}</p>
       {sub && <p style={{ margin:0, fontSize:11, color:T.d }}>{sub}</p>}
+    </div>
+  )
+}
+
+function NavBadge({ badge, active }) {
+  return <span style={{ width:26,height:26,borderRadius:9,display:'grid',placeItems:'center',flexShrink:0,fontSize:10,fontWeight:800,letterSpacing:'0.08em',color:active?'#fff':T.m,background:active?'linear-gradient(135deg, rgba(91,46,255,0.95), rgba(155,89,182,0.75))':'rgba(255,255,255,0.04)',border:`1px solid ${active?'rgba(91,46,255,0.45)':T.border}` }}>{badge}</span>
+}
+
+function HeaderMark({ label, title, subtitle }) {
+  return (
+    <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+      <div style={{ width:38,height:38,borderRadius:13,display:'grid',placeItems:'center',background:'linear-gradient(135deg, rgba(91,46,255,0.95), rgba(155,89,182,0.75))',boxShadow:'0 12px 30px rgba(91,46,255,0.25)',color:'#fff',fontWeight:800,letterSpacing:'0.08em',fontSize:12 }}>{label}</div>
+      <div style={{ minWidth:0 }}>
+        <div style={{ fontSize:14,fontWeight:800,color:'#fff' }}>{title}</div>
+        <div style={{ fontSize:11,color:T.d,letterSpacing:'0.06em',textTransform:'uppercase' }}>{subtitle}</div>
+      </div>
     </div>
   )
 }
@@ -439,7 +456,7 @@ function JournalPage({ trades, onAdd, onDelete }) {
 
       {filtered.length===0 ? (
         <div style={{ textAlign:'center',padding:'80px 0',color:T.m }}>
-          <div style={{ fontSize:40,marginBottom:12 }}>📋</div>
+          <div style={{ width:48,height:48,margin:'0 auto 12px',borderRadius:16,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,color:'#fff',fontSize:14,fontWeight:800,letterSpacing:'0.08em' }}>JR</div>
           <div style={{ fontSize:15 }}>No trades yet</div>
           <div style={{ fontSize:12,color:T.d,marginTop:4 }}>Click "+ Log Trade" to start your journal</div>
         </div>
@@ -460,7 +477,7 @@ function TradeCard({ trade:t, onEdit, onDelete }) {
     <div style={{ background:T.card,border:`1px solid ${open?T.p+'44':T.border}`,borderRadius:14,overflow:'hidden',transition:'border-color 0.15s' }}>
       <div style={{ padding:'13px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer' }} onClick={()=>setOpen(!open)}>
         <div style={{ display:'flex',alignItems:'center',gap:10 }}>
-          <span style={{ fontSize:18 }}>{t.emotion}</span>
+          <div style={{ width:30,height:30,borderRadius:10,display:'grid',placeItems:'center',background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,fontSize:14 }}>{t.emotion}</div>
           <div>
             <span style={{ fontWeight:700,fontSize:14 }}>{t.symbol}</span>
             <span style={{ marginLeft:7,fontSize:10,fontWeight:700,padding:'2px 7px',borderRadius:5,background:t.type==='LONG'?'rgba(46,204,138,0.15)':'rgba(255,77,106,0.15)',color:t.type==='LONG'?T.g:T.r }}>{t.type}</span>
@@ -469,7 +486,7 @@ function TradeCard({ trade:t, onEdit, onDelete }) {
         </div>
         <div style={{ display:'flex',alignItems:'center',gap:16 }}>
           <span style={{ fontSize:11,color:T.d,fontFamily:T.mono }}>{t.date?.slice(0,10)}</span>
-          {t.image_url && <span style={{ fontSize:11,color:'#C084FC',background:'rgba(192,132,252,0.1)',padding:'2px 6px',borderRadius:5 }}>📸</span>}
+          {t.image_url && <span style={{ fontSize:11,color:'#C084FC',background:'rgba(192,132,252,0.1)',padding:'2px 8px',borderRadius:999,letterSpacing:'0.08em',fontWeight:700 }}>SHOT</span>}
           <div style={{ textAlign:'right' }}>
             <div style={{ fontWeight:800,fontSize:14,color:(t.pnl||0)>=0?T.g:T.r,fontFamily:T.mono }}>{fmtInr(t.pnl)}</div>
             {profitPct!==null && <div style={{ fontSize:10,color:(t.pnl||0)>=0?T.g:T.r,fontFamily:T.mono }}>{profitPct>=0?'+':''}{profitPct}%</div>}
@@ -1554,7 +1571,7 @@ export default function Dashboard() {
       <aside style={{ width:sidebar?218:60,flexShrink:0,background:'rgba(255,255,255,0.018)',borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',padding:'22px 0',transition:'width 0.28s cubic-bezier(.4,0,.2,1)',overflow:'hidden',position:'sticky',top:0,height:'100vh' }}>
         {/* Logo */}
         <div style={{ padding:'0 16px 22px',display:'flex',alignItems:'center',gap:10,justifyContent:sidebar?'flex-start':'center' }}>
-          <div style={{ width:32,height:32,background:`linear-gradient(135deg,${T.p},#9B59B6)`,borderRadius:9,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0 }}>📊</div>
+          <div style={{ width:32,height:32,background:`linear-gradient(135deg,${T.p},#9B59B6)`,borderRadius:10,display:'grid',placeItems:'center',fontSize:11,fontWeight:800,letterSpacing:'0.08em',flexShrink:0,color:'#fff' }}>TD</div>
           {sidebar && <span style={{ fontSize:14,fontWeight:800,letterSpacing:'-0.02em',whiteSpace:'nowrap' }}>Trade<span style={{ color:T.p }}>Daddy</span></span>}
         </div>
 
@@ -1582,7 +1599,7 @@ export default function Dashboard() {
               }}
               onMouseEnter={e=>{ if(page!==item.id){ e.currentTarget.style.background='rgba(255,255,255,0.04)'; e.currentTarget.style.color='rgba(255,255,255,0.8)' }}}
               onMouseLeave={e=>{ if(page!==item.id){ e.currentTarget.style.background='transparent'; e.currentTarget.style.color=T.m }}}>
-              <span style={{ fontSize:15,flexShrink:0 }}>{item.icon}</span>
+              <NavBadge badge={item.badge} active={page===item.id} />
               {sidebar && item.label}
             </button>
           ))}
@@ -1599,10 +1616,7 @@ export default function Dashboard() {
       {/* Main */}
       <main style={{ flex:1,overflow:'auto',padding:'22px 24px 28px',minWidth:0 }}>
         <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',gap:14,flexWrap:'wrap',marginBottom:16 }}>
-          <div style={{ minWidth:0 }}>
-            <div style={{ fontSize:11,color:T.d,textTransform:'uppercase',letterSpacing:'0.08em',fontWeight:700 }}>Workspace</div>
-            <h2 style={{ margin:'6px 0 0',fontSize:'clamp(22px, 2.2vw, 30px)',fontWeight:800,letterSpacing:'-0.04em' }}>{PAGE_TITLES[page] || 'Overview'}</h2>
-          </div>
+          <HeaderMark label={(PAGE_TITLES[page] || 'OV').slice(0,2).toUpperCase()} title={PAGE_TITLES[page] || 'Overview'} subtitle="Workspace" />
           <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
             <div style={{ display:'flex',alignItems:'center',gap:8,padding:'9px 12px',background:'rgba(46,204,138,0.09)',border:'1px solid rgba(46,204,138,0.18)',borderRadius:12,fontSize:12 }}>
               <span style={{ width:7,height:7,borderRadius:'50%',background:T.g,display:'inline-block' }}/>
