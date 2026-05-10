@@ -55,6 +55,9 @@ function ArticleCard({ article }) {
   const [loading,  setLoading]  = useState(false)
   const [open,     setOpen]     = useState(false)
   const sc = analysis ? (SENT[analysis.sentiment]||SENT.NEUTRAL) : null
+  const openArticle = () => {
+    if (article.link) window.open(article.link, '_blank')
+  }
 
   useEffect(() => {
     if (article.analysis) {
@@ -66,7 +69,19 @@ function ArticleCard({ article }) {
 
   return (
     <div style={{ background:T.card, border:`1px solid ${open?T.p+'44':T.border}`, borderRadius:16, overflow:'hidden', transition:'border-color 0.2s' }}>
-      <div style={{ padding:'16px 18px' }}>
+      <div
+        style={{ padding:'16px 18px', cursor: article.link ? 'pointer' : 'default' }}
+        onClick={openArticle}
+        role={article.link ? 'button' : undefined}
+        tabIndex={article.link ? 0 : undefined}
+        onKeyDown={e => {
+          if (!article.link) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            openArticle()
+          }
+        }}
+      >
         <div style={{ display:'flex', justifyContent:'space-between', gap:14, alignItems:'flex-start' }}>
           <div style={{ flex:1, minWidth:0 }}>
             {article.source && (
@@ -75,7 +90,7 @@ function ArticleCard({ article }) {
                 {article.source}
               </div>
             )}
-            <div role="link" onClick={() => article.link && window.open(article.link, '_blank')} style={{ textDecoration:'none', color:T.t, fontSize:14, fontWeight:600, lineHeight:1.55, display:'block', transition:'color 0.15s', cursor:'pointer' }}
+            <div style={{ textDecoration:'none', color:T.t, fontSize:14, fontWeight:600, lineHeight:1.55, display:'block', transition:'color 0.15s' }}
               onMouseEnter={e=>e.currentTarget.style.color=T.p} onMouseLeave={e=>e.currentTarget.style.color=T.t}>
               {article.title}
             </div>

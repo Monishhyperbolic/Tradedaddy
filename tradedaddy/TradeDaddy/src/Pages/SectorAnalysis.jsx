@@ -1,7 +1,7 @@
 /**
  * SectorAnalysis.jsx — Indian Sector Screener
  * Uses Yahoo Finance via Worker proxy
- * HuggingFace for AI analysis
+ * Groq for AI analysis
  */
 import { useState, useEffect, useCallback } from 'react'
 import { getQuote, groqChat } from '../utils/api'
@@ -35,17 +35,14 @@ const SECTORS = [
     stocks:[{s:'TATASTEEL.NS',n:'Tata Steel'},{s:'JSWSTEEL.NS',n:'JSW Steel'},{s:'HINDALCO.NS',n:'Hindalco'},{s:'VEDL.NS',n:'Vedanta'},{s:'SAIL.NS',n:'SAIL'},{s:'NMDC.NS',n:'NMDC'}] },
 ]
 
-// HuggingFace via Worker proxy (no CORS issues)
-async function hfAnalyze(prompt) {
+// Groq via Worker proxy (no CORS issues)
+async function groqAnalyze(prompt) {
   try {
     const fullPrompt = `<s>[INST] You are an expert Indian stock market analyst. ${prompt} Give a concise 3-sentence analysis with a specific BUY/HOLD/AVOID recommendation. [/INST]`
     return await groqChat(fullPrompt)
   } catch(e) {
     if (e.message.includes('loading')) return '⏳ ' + e.message
-    const hasToken = !!localStorage.getItem('hf_token')
-    return hasToken
-      ? `AI unavailable: ${e.message}. Try again in 30s.`
-      : `Set your free HuggingFace token above to enable AI analysis.`
+    return `Groq analysis unavailable: ${e.message}. Try again in 30s.`
   }
 }
 
@@ -100,8 +97,6 @@ function SectorRanking({ sectors, allData }) {
 
 export default function SectorAnalysis() {
   const [allData,      setAllData]      = useState([]) // [{id, avg}]
-  const [hfTokenInput, setHfTokenInput] = useState('')
-  const [tokenSet,     setTokenSet]     = useState(!!localStorage.getItem('hf_token'))
   const [analyzing,    setAnalyzing]    = useState(false)
   const [marketSummary,setMarketSummary]= useState(null)
   const [marketSummaryKey, setMarketSummaryKey] = useState('')
@@ -122,7 +117,7 @@ export default function SectorAnalysis() {
       return `${sec?.label||d.id}: ${d.avg>=0?'+':''}${d.avg.toFixed(2)}%`
     }).join('; ')
     const prompt = `Indian stock market sector performance today: ${summary}. Which sectors should an Indian retail investor focus on today? What is the overall market sentiment?`
-    const text = await hfAnalyze(prompt)
+    const text = await groqAnalyze(prompt)
     setMarketSummary(text)
     setAnalyzing(false)
   }, [])
@@ -135,13 +130,6 @@ export default function SectorAnalysis() {
     setMarketSummaryKey(key)
     analyzeFullMarket(snapshot)
   }, [allData, marketSummaryKey, analyzeFullMarket])
-
-  const saveToken = () => {
-    if (!hfTokenInput.startsWith('hf_')) { alert('Token should start with hf_'); return }
-    localStorage.setItem('hf_token', hfTokenInput)
-    setTokenSet(true)
-    setHfTokenInput('')
-  }
 
   const bullish  = allData.filter(d=>d.avg>=0).length
   const bearish  = allData.filter(d=>d.avg<0).length
@@ -158,8 +146,6 @@ export default function SectorAnalysis() {
         {allData.length > 0 && <div style={{ fontSize:12, color:analyzing?C.a:C.g, fontWeight:700 }}>{analyzing ? 'AI summary loading…' : 'AI summary ready'}</div>}
       </div>
 
-      {/* HF Token setup */}
-      
       {/* Market summary */}
       {marketSummary && (
         <div style={{ background:'rgba(82,39,255,0.08)',border:'1px solid rgba(82,39,255,0.25)',borderRadius:14,padding:'16px 18px',marginBottom:20 }}>
@@ -218,7 +204,7 @@ function SectorCardWrapper({ sector, onAvgUpdate }) {
     if (analysis || analyzing) return
     setAnalyzing(true)
     const sum = valid.map(q=>`${q.displayName}:${q.changePct>=0?'+':''}${q.changePct?.toFixed(2)}%`).join(', ')
-    const text = await hfAnalyze(`Analyze Indian ${sector.label} sector. Stocks: ${sum}. Avg change: ${avg>=0?'+':''}${avg.toFixed(2)}%. Should investors BUY, HOLD or AVOID? Give specific recommendation.`)
+    const text = await groqAnalyze(`Analyze Indian ${sector.label} sector. Stocks: ${sum}. Avg change: ${avg>=0?'+':''}${avg.toFixed(2)}%. Should investors BUY, HOLD or AVOID? Give specific recommendation.`)
     setAnalysis(text); setExpanded(true); setAnalyzing(false)
   }, [analysis, analyzing, avg, valid, sector.label])
 
