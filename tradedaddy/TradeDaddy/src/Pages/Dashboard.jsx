@@ -44,6 +44,20 @@ const NAV = [
   { icon:'⚙',  label:'Settings',  id:'settings' },
 ]
 
+const PAGE_TITLES = {
+  dashboard: 'Overview',
+  journal: 'Trade Journal',
+  holdings: 'Holdings',
+  scanner: 'Scanner',
+  analytics: 'Analytics',
+  sectors: 'Sector Analysis',
+  news: 'News',
+  calendar: 'Economic Calendar',
+  chat: 'AI Chat',
+  import: 'Import Trades',
+  settings: 'Settings',
+}
+
 const fmtInr = (n, compact=false) => {
   if (n==null) return '—'
   const abs = Math.abs(n)
@@ -254,90 +268,130 @@ function DashboardHome({ trades, holdings, user }) {
   const firstName= (user?.name||'Trader').split(' ')[0]
 
   return (
-    <div>
-      <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22 }}>
-        <div>
-          <h1 style={{ margin:'0 0 4px',fontSize:22,fontWeight:800,letterSpacing:'-0.02em' }}>
-            {hour<12?'Good morning':hour<17?'Good afternoon':'Good evening'}, {firstName} 👋
-          </h1>
-          <p style={{ margin:0,fontSize:13,color:T.m }}>
-            {new Date().toLocaleDateString('en-IN',{weekday:'long',month:'long',day:'numeric'})}
-            <span style={{ marginLeft:10,color:T.d }}>·</span>
-            <span style={{ marginLeft:10,color:T.d }}>{trades.length} trades logged</span>
-          </p>
+    <div style={{ display:'grid',gap:16 }}>
+      <div style={{ background:'linear-gradient(135deg, rgba(91,46,255,0.18), rgba(255,255,255,0.04))',border:`1px solid rgba(91,46,255,0.22)`,borderRadius:22,padding:'20px 22px',display:'grid',gap:16 }}>
+        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16,flexWrap:'wrap' }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ display:'inline-flex',alignItems:'center',gap:8,padding:'6px 10px',borderRadius:999,background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,color:T.m,fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase' }}>Product workspace</div>
+            <h1 style={{ margin:'12px 0 8px',fontSize:'clamp(28px, 3vw, 40px)',fontWeight:800,letterSpacing:'-0.04em',lineHeight:1.05 }}>
+              {greeting}, {firstName}.
+            </h1>
+            <p style={{ margin:0,fontSize:14,color:T.m,maxWidth:680,lineHeight:1.7 }}>
+              Your trade journal, broker sync, charts, and AI review live in one place. Use the dashboard to spot what is working, what is leaking edge, and what to fix next.
+            </p>
+          </div>
+
+          <div style={{ display:'grid',gap:10,minWidth:240 }}>
+            <div style={{ display:'flex',alignItems:'center',gap:8,padding:'10px 14px',background:'rgba(46,204,138,0.09)',border:'1px solid rgba(46,204,138,0.2)',borderRadius:14,fontSize:12,color:'#fff' }}>
+              <span style={{ width:8,height:8,borderRadius:'50%',background:T.g,display:'inline-block' }}/>
+              Live workspace is connected
+            </div>
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10 }}>
+              <button onClick={()=>window.dispatchEvent(new CustomEvent('td:navigate',{detail:'journal'}))} style={{ padding:'11px 12px',background:T.p,border:'none',borderRadius:14,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:T.font,boxShadow:'0 10px 24px rgba(91,46,255,0.24)' }}>+ Log Trade</button>
+              <button onClick={()=>window.dispatchEvent(new CustomEvent('td:navigate',{detail:'holdings'}))} style={{ padding:'11px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,borderRadius:14,color:T.t,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:T.font }}>View Holdings</button>
+            </div>
+          </div>
         </div>
-        <div style={{ display:'flex',alignItems:'center',gap:8,padding:'9px 14px',background:T.pd,border:'1px solid rgba(91,46,255,0.3)',borderRadius:12,fontSize:12 }}>
-          <span style={{ width:7,height:7,borderRadius:'50%',background:T.g,display:'inline-block' }}/>
-          Cloudflare D1 Connected
+
+        <div style={{ display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:12 }}>
+          <div style={{ padding:'14px 16px',borderRadius:16,background:'rgba(255,255,255,0.04)',border:`1px solid ${T.border}` }}>
+            <div style={{ fontSize:11,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em',fontWeight:700 }}>Portfolio Value</div>
+            <div style={{ marginTop:8,fontSize:22,fontWeight:800,letterSpacing:'-0.03em' }}>{totalVal>0?fmtInr(totalVal,true):'—'}</div>
+            <div style={{ marginTop:4,fontSize:12,color:T.m }}>{holdings.length} positions tracked</div>
+          </div>
+          <div style={{ padding:'14px 16px',borderRadius:16,background:'rgba(255,255,255,0.04)',border:`1px solid ${T.border}` }}>
+            <div style={{ fontSize:11,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em',fontWeight:700 }}>Total PnL</div>
+            <div style={{ marginTop:8,fontSize:22,fontWeight:800,letterSpacing:'-0.03em',color:totalPnL>=0?T.g:T.r }}>{fmtInr(totalPnL,true)}</div>
+            <div style={{ marginTop:4,fontSize:12,color:T.m }}>{trades.length} trade events</div>
+          </div>
+          <div style={{ padding:'14px 16px',borderRadius:16,background:'rgba(255,255,255,0.04)',border:`1px solid ${T.border}` }}>
+            <div style={{ fontSize:11,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em',fontWeight:700 }}>Win Rate</div>
+            <div style={{ marginTop:8,fontSize:22,fontWeight:800,letterSpacing:'-0.03em',color:winRate>=60?T.g:T.a }}>{winRate}%</div>
+            <div style={{ marginTop:4,fontSize:12,color:T.m }}>{wins} winners, {trades.length-wins} losers</div>
+          </div>
+          <div style={{ padding:'14px 16px',borderRadius:16,background:'rgba(255,255,255,0.04)',border:`1px solid ${T.border}` }}>
+            <div style={{ fontSize:11,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em',fontWeight:700 }}>Avg Discipline</div>
+            <div style={{ marginTop:8,fontSize:22,fontWeight:800,letterSpacing:'-0.03em',color:'#C084FC' }}>{avgDisc}/100</div>
+            <div style={{ marginTop:4,fontSize:12,color:T.m }}>Journal quality score</div>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20 }}>
-        <Stat label="Portfolio Value"  value={totalVal>0?fmtInr(totalVal,true):'—'} sub={`${holdings.length} positions`}/>
-        <Stat label="Total PnL"        value={fmtInr(totalPnL,true)} sub={`${trades.length} trades`} color={totalPnL>=0?T.g:T.r}/>
-        <Stat label="Win Rate"         value={`${winRate}%`} sub={`${wins}W ${trades.length-wins}L`} color={winRate>=60?T.g:T.a}/>
-        <Stat label="Avg Discipline"   value={`${avgDisc}/100`} sub="Journal score" color="#C084FC"/>
-      </div>
-
-      {/* Charts row */}
-      <div style={{ display:'grid',gridTemplateColumns:'1fr 300px',gap:14,marginBottom:20 }}>
-        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'18px 20px' }}>
+      <div style={{ display:'grid',gridTemplateColumns:'1fr 320px',gap:14,alignItems:'stretch' }}>
+        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:18,padding:'18px 20px' }}>
           <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14 }}>
-            <h3 style={{ margin:0,fontSize:12,fontWeight:700,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em' }}>Equity Curve</h3>
-            <span style={{ fontSize:11,color:T.d }}>Based on trade PnL</span>
+            <div>
+              <h3 style={{ margin:0,fontSize:13,fontWeight:800,color:'#fff' }}>Equity Curve</h3>
+              <span style={{ fontSize:11,color:T.d }}>Based on trade PnL</span>
+            </div>
+            <span style={{ fontSize:11,color:T.m }}>Performance snapshot</span>
           </div>
           <EquityChart trades={trades}/>
         </div>
-        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'18px 20px' }}>
-          <h3 style={{ margin:'0 0 14px',fontSize:12,fontWeight:700,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em' }}>Allocation</h3>
+        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:18,padding:'18px 20px' }}>
+          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14 }}>
+            <div>
+              <h3 style={{ margin:0,fontSize:13,fontWeight:800,color:'#fff' }}>Allocation</h3>
+              <span style={{ fontSize:11,color:T.d }}>Portfolio mix</span>
+            </div>
+          </div>
           <AllocDonut holdings={holdings}/>
         </div>
       </div>
 
-      {/* Recent trades */}
-      {trades.length>0 && (
-        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'18px 20px',marginBottom:16 }}>
-          <h3 style={{ margin:'0 0 14px',fontSize:12,fontWeight:700,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em' }}>Recent Trades</h3>
-          <div style={{ display:'flex',flexDirection:'column',gap:7 }}>
-            {trades.slice(0,5).map(t=>(
-              <div key={t.id} style={{ display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 12px',background:'rgba(255,255,255,0.02)',borderRadius:10,transition:'background 0.12s' }}
-                onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
-                onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.02)'}>
-                <div style={{ display:'flex',alignItems:'center',gap:10 }}>
-                  <span style={{ fontSize:17 }}>{t.emotion}</span>
-                  <div>
-                    <span style={{ fontWeight:700,fontSize:14 }}>{t.symbol}</span>
-                    <span style={{ marginLeft:7,fontSize:10,fontWeight:700,padding:'2px 7px',borderRadius:5,background:t.type==='LONG'?'rgba(46,204,138,0.15)':'rgba(255,77,106,0.15)',color:t.type==='LONG'?T.g:T.r }}>{t.type}</span>
-                    {t.setup && <span style={{ marginLeft:7,fontSize:11,color:T.d }}>{t.setup}</span>}
+      <div style={{ display:'grid',gridTemplateColumns:'1.1fr 0.9fr',gap:14,alignItems:'stretch' }}>
+        {trades.length>0 && (
+          <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:18,padding:'18px 20px' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14 }}>
+              <div>
+                <h3 style={{ margin:0,fontSize:13,fontWeight:800,color:'#fff' }}>Recent Trades</h3>
+                <span style={{ fontSize:11,color:T.d }}>Most recent decisions</span>
+              </div>
+              <button onClick={()=>window.dispatchEvent(new CustomEvent('td:navigate',{detail:'journal'}))} style={{ padding:'7px 10px',background:'rgba(255,255,255,0.05)',border:`1px solid ${T.border}`,borderRadius:10,color:T.m,fontSize:12,cursor:'pointer' }}>Open Journal</button>
+            </div>
+            <div style={{ display:'flex',flexDirection:'column',gap:7 }}>
+              {trades.slice(0,5).map(t=>(
+                <div key={t.id} style={{ display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 12px',background:'rgba(255,255,255,0.02)',borderRadius:12,transition:'background 0.12s' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.02)'}>
+                  <div style={{ display:'flex',alignItems:'center',gap:10, minWidth:0 }}>
+                    <span style={{ fontSize:17 }}>{t.emotion}</span>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ display:'flex',alignItems:'center',gap:8,flexWrap:'wrap' }}>
+                        <span style={{ fontWeight:700,fontSize:14 }}>{t.symbol}</span>
+                        <span style={{ fontSize:10,fontWeight:700,padding:'2px 7px',borderRadius:5,background:t.type==='LONG'?'rgba(46,204,138,0.15)':'rgba(255,77,106,0.15)',color:t.type==='LONG'?T.g:T.r }}>{t.type}</span>
+                      </div>
+                      {t.setup && <div style={{ marginTop:2,fontSize:11,color:T.d,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{t.setup}</div>}
+                    </div>
+                  </div>
+                  <div style={{ display:'flex',alignItems:'center',gap:14,flexShrink:0 }}>
+                    <span style={{ fontSize:11,color:T.d,fontFamily:T.mono }}>{t.date?.slice(0,10)}</span>
+                    <span style={{ fontWeight:800,fontSize:14,color:(t.pnl||0)>=0?T.g:T.r,fontFamily:T.mono }}>{fmtInr(t.pnl)}</span>
                   </div>
                 </div>
-                <div style={{ display:'flex',alignItems:'center',gap:14 }}>
-                  <span style={{ fontSize:11,color:T.d,fontFamily:T.mono }}>{t.date?.slice(0,10)}</span>
-                  <span style={{ fontWeight:800,fontSize:14,color:(t.pnl||0)>=0?T.g:T.r,fontFamily:T.mono }}>{fmtInr(t.pnl)}</span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Emotion tracker */}
-      {trades.length>0 && (
-        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:'18px 20px' }}>
-          <h3 style={{ margin:'0 0 4px',fontSize:12,fontWeight:700,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em' }}>Emotional Tracker</h3>
-          <p style={{ margin:'0 0 12px',fontSize:11,color:'rgba(255,255,255,0.2)' }}>One emoji per trade — spot your behavioral patterns</p>
-          <div style={{ display:'flex',flexWrap:'wrap',gap:6 }}>
-            {trades.slice(0,30).map((t,i)=>(
-              <div key={i} title={`${t.symbol} · ${t.date?.slice(0,10)} · ${fmtInr(t.pnl)}`} style={{ width:34,height:34,borderRadius:9,fontSize:17,background:'rgba(255,255,255,0.04)',display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${T.f}`,cursor:'default',transition:'transform 0.1s' }}
-                onMouseEnter={e=>e.currentTarget.style.transform='scale(1.15)'}
-                onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-                {t.emotion||'😐'}
-              </div>
-            ))}
+        {trades.length>0 && (
+          <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:18,padding:'18px 20px' }}>
+            <div style={{ marginBottom:14 }}>
+              <h3 style={{ margin:0,fontSize:13,fontWeight:800,color:'#fff' }}>Emotional Tracker</h3>
+              <span style={{ fontSize:11,color:T.d }}>One emoji per trade</span>
+            </div>
+            <div style={{ display:'flex',flexWrap:'wrap',gap:8 }}>
+              {trades.slice(0,30).map((t,i)=>(
+                <div key={i} title={`${t.symbol} · ${t.date?.slice(0,10)} · ${fmtInr(t.pnl)}`} style={{ width:36,height:36,borderRadius:11,fontSize:18,background:'rgba(255,255,255,0.04)',display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${T.f}`,cursor:'default',transition:'transform 0.1s' }}
+                  onMouseEnter={e=>e.currentTarget.style.transform='scale(1.12)'}
+                  onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+                  {t.emotion||'😐'}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -1543,7 +1597,21 @@ export default function Dashboard() {
       </aside>
 
       {/* Main */}
-      <main style={{ flex:1,overflow:'auto',padding:'26px 30px',minWidth:0 }}>
+      <main style={{ flex:1,overflow:'auto',padding:'22px 24px 28px',minWidth:0 }}>
+        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',gap:14,flexWrap:'wrap',marginBottom:16 }}>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:11,color:T.d,textTransform:'uppercase',letterSpacing:'0.08em',fontWeight:700 }}>Workspace</div>
+            <h2 style={{ margin:'6px 0 0',fontSize:'clamp(22px, 2.2vw, 30px)',fontWeight:800,letterSpacing:'-0.04em' }}>{PAGE_TITLES[page] || 'Overview'}</h2>
+          </div>
+          <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
+            <div style={{ display:'flex',alignItems:'center',gap:8,padding:'9px 12px',background:'rgba(46,204,138,0.09)',border:'1px solid rgba(46,204,138,0.18)',borderRadius:12,fontSize:12 }}>
+              <span style={{ width:7,height:7,borderRadius:'50%',background:T.g,display:'inline-block' }}/>
+              Auto approval ready
+            </div>
+            <button onClick={()=>setPage('journal')} style={{ padding:'10px 14px',background:T.p,border:'none',borderRadius:12,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:T.font,boxShadow:'0 10px 24px rgba(91,46,255,0.24)' }}>+ New Trade</button>
+          </div>
+        </div>
+
         {error && <div style={{ marginBottom:16,padding:'10px 14px',background:'rgba(255,77,106,0.08)',border:'1px solid rgba(255,77,106,0.2)',borderRadius:11,color:T.r,fontSize:13 }}>⚠ {error} — Check Worker deployment</div>}
         {loading && page==='dashboard' ? (
           <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'50vh',flexDirection:'column',gap:12,color:T.d }}>

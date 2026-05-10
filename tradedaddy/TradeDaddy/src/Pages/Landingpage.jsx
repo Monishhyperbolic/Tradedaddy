@@ -6,6 +6,19 @@ import ProfileCard from '../components/profilecard/ProfileCard';
 import MagicBento from '../components/features/MagicBento';
 import Footer from '../components/Footer';
 
+const highlights = [
+  { value: '1 workspace', label: 'for trades, holdings, and review' },
+  { value: 'Live sync', label: 'from broker-connected holdings' },
+  { value: 'AI feedback', label: 'built around your actual journal' },
+]
+
+const featureLines = [
+  'Trade journaling with emotion and discipline tracking',
+  'Broker sync for Dhan and MT5 without manual copying',
+  'AI prompts that use your live portfolio context',
+  'A cleaner workspace that works on desktop and mobile',
+]
+
 function Landingpage() {
   const navigate = useNavigate();
 
@@ -20,8 +33,7 @@ function Landingpage() {
   };
 
   return (
-    <div style={{ width: '100vw', overflowX: 'hidden' }}>
-      {/* ================= BACKGROUND ================= */}
+    <div className="landing-shell">
       <div
         style={{
           position: 'fixed',
@@ -45,7 +57,6 @@ function Landingpage() {
         />
       </div>
 
-      {/* ================= NAVBAR ================= */}
       <div
         style={{
           position: 'fixed',
@@ -58,132 +69,93 @@ function Landingpage() {
         <GooeyNav items={items} />
       </div>
 
-      {/* ================= PAGE CONTENT ================= */}
       <main style={{ position: 'relative', zIndex: 1 }}>
-        {/* ================= HERO ================= */}
-        <section
-          id="home"
-          style={{
-            height: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            color: '#fff',
-            scrollMarginTop: '160px',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 36 }}>
+        <section id="home" className="landing-hero" style={{ scrollMarginTop: '160px' }}>
+          <div className="hero-copy">
+            <span className="eyebrow">Auto-approval ready trading workspace</span>
             <BlurText
-              text="Welcome to TradeDaddy!"
+              text="Welcome to TradeDaddy"
               delay={150}
               animateBy="words"
               direction="top"
               style={{
-                fontSize: '65px',
+                fontSize: 'clamp(48px, 7vw, 80px)',
                 fontWeight: 700,
-                lineHeight: 1.1,
+                lineHeight: 1.02,
+                letterSpacing: '-0.05em',
+                maxWidth: '12ch',
               }}
             />
-<button
-  onClick={goToAuth}
-  style={{
-    position: "relative",
-    padding: "18px 52px",
-    fontSize: "18px",
-    fontWeight: 600,
-    letterSpacing: "0.04em",
-    borderRadius: "16px",
-    border: "2px solid #fff",
-    background: "transparent",
-    color: "#fff",
-    cursor: "pointer",
-    overflow: "hidden",
-    transition: "color 0.35s ease"
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.color = "#000";
-    e.currentTarget.querySelector(".fill").style.transform = "translateX(0)";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.color = "#fff";
-    e.currentTarget.querySelector(".fill").style.transform = "translateX(100%)";
-  }}
->
-  <span
-    className="fill"
-    style={{
-      position: "absolute",
-      inset: 0,
-      background: "#fff",
-      borderRadius: "14px",
-      zIndex: -1,
-      transform: "translateX(100%)",
-      transition: "transform 0.35s ease"
-    }}
-  />
-  Get Started
-</button>
+            <p>
+              Track trades, sync brokers, and review your edge in a workspace built to surface the habits behind your results.
+            </p>
+            <div className="cta-row">
+              <button className="cta-primary" onClick={goToAuth}>Get Started</button>
+              <a className="cta-secondary" href="#features">Explore features</a>
+            </div>
+            <div className="stats-row">
+              {highlights.map(item => (
+                <div key={item.label}>
+                  <strong>{item.value}</strong>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
+          <div className="hero-panel">
+            <div className="panel-header">
+              <div>
+                <span className="panel-badge">Built for active traders</span>
+                <h2 style={{ marginTop: 12 }}>A calmer view of performance</h2>
+              </div>
+              <span className="auth-pill">Live journal + broker sync</span>
+            </div>
+
+            <p className="panel-quote">
+              Everything in one place: journal entries, emotional patterns, holdings, market scans, news, and AI commentary that uses your actual data.
+            </p>
+
+            <div className="panel-grid">
+              {featureLines.map((line, index) => (
+                <div key={line} className="panel-stat">
+                  <strong>{String(index + 1).padStart(2, '0')}</strong>
+                  <span>{line}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* ================= FEATURES ================= */}
-        <section
-          id="features"
-          style={{
-            padding: '80px 10%',
-            color: '#fff',
-            scrollMarginTop: '5px',
-          }}
-        >
-          <h2
-            style={{
-              fontSize: '48px',
-              marginBottom: '40px',
-            }}
-          >
-            Features
-          </h2>
+        <section id="features" className="section-shell" style={{ scrollMarginTop: '5px' }}>
+          <div className="section-head" style={{ marginBottom: 20 }}>
+            <div>
+              <span className="section-kicker">Features</span>
+              <h2 style={{ marginTop: 12 }}>Tools that support cleaner decisions</h2>
+            </div>
+            <p className="section-copy" style={{ maxWidth: 420 }}>
+              Use a single workspace to review trade quality, broker data, market scans, news, and calendars without bouncing between screens.
+            </p>
+          </div>
 
           <MagicBento />
         </section>
 
-        {/* ================= ABOUT ================= */}
-        <section
-          id="about"
-          style={{
-            padding: '170px 10%',
-            color: '#fff',
-            scrollMarginTop: '1px',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '1200px',
-              margin: '0 auto',
-              display: 'grid',
-              gridTemplateColumns: '1fr 1.2fr',
-              gap: '80px',
-              alignItems: 'flex-start',
-            }}
-          >
-            <ProfileCard/>
+        <section id="about" className="section-shell" style={{ scrollMarginTop: '1px' }}>
+          <div className="about-grid">
+            <ProfileCard />
 
-            <div>
-              <h2 style={{ fontSize: '48px', marginBottom: 24 }}>About</h2>
-              <p
-                style={{
-                  fontSize: '18px',
-                  lineHeight: 1.7,
-                  opacity: 0.9,
-                }}
-              >
-                TradeDaddy is a personal trading analytics platform focused on
-                clarity and discipline. It helps traders understand performance,
-                mistakes, emotional bias, and strategy effectiveness through
-                structured data and modern tools.
+            <div className="about-copy">
+              <span className="section-kicker">About</span>
+              <h2 style={{ marginTop: 12 }}>Designed around discipline, not noise</h2>
+              <p style={{ marginTop: 18, fontSize: 18 }}>
+                TradeDaddy is a personal trading analytics platform focused on clarity, discipline, and repeatable review. It helps traders understand performance, mistakes, emotional bias, and strategy effectiveness through structured data and a cleaner interface.
               </p>
+              <ul>
+                <li>Log trades with notes, emotions, screenshots, and discipline scores.</li>
+                <li>Sync holdings from connected brokers instead of maintaining duplicates.</li>
+                <li>Keep the dashboard readable on desktop and mobile so the workflow stays fast.</li>
+              </ul>
             </div>
           </div>
         </section>

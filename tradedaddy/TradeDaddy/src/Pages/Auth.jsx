@@ -75,38 +75,60 @@ export default function Auth() {
   const switchMode = (m) => { setMode(m); setError(''); setForm({ name:'', email:'', password:'' }) }
 
   return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:T.bg, fontFamily:T.font, position:'relative', overflow:'hidden' }}>
-      {/* Background glows */}
+    <div className="auth-shell" style={{ fontFamily:T.font }}>
       <div style={{ position:'absolute', top:'10%', left:'50%', transform:'translateX(-50%)', width:800, height:800, background:'radial-gradient(circle, rgba(91,46,255,0.08) 0%, transparent 60%)', borderRadius:'50%', pointerEvents:'none' }}/>
       <div style={{ position:'absolute', bottom:'5%', right:'10%', width:400, height:400, background:'radial-gradient(circle, rgba(46,204,138,0.05) 0%, transparent 70%)', borderRadius:'50%', pointerEvents:'none' }}/>
 
-      <div style={{ position:'relative', zIndex:1, width:'100%', maxWidth:440, padding:'0 20px' }}>
-        {/* Logo */}
-        <div style={{ textAlign:'center', marginBottom:32 }}>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:10, marginBottom:10 }}>
-            <div style={{ width:38, height:38, background:'linear-gradient(135deg, #5B2EFF, #9B59B6)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📊</div>
-            <span style={{ fontSize:28, fontWeight:900, letterSpacing:'-0.04em', color:'#fff' }}>
-              Trade<span style={{ color:T.p }}>Daddy</span>
-            </span>
-          </div>
-          <p style={{ margin:0, fontSize:14, color:T.m }}>
-            {mode === 'login' ? 'Welcome back. Sign in to your account.' : 'Create your account and start journaling.'}
+      <div className="auth-grid">
+        <div className="auth-copy">
+          <span className="section-kicker">Secure sign in</span>
+          <h1>{mode === 'login' ? 'Welcome back to TradeDaddy' : 'Create your TradeDaddy account'}</h1>
+          <p>
+            Keep trades, holdings, and broker connections isolated per user while getting a cleaner review flow for journaling and performance analysis.
           </p>
+
+          <div className="auth-meta">
+            <div className="auth-pill">🔒 Multi-user safe</div>
+            <div className="auth-pill">☁ Cloudflare Workers</div>
+            <div className="auth-pill">📈 Journaling + analytics</div>
+          </div>
+
+          <div className="auth-card" style={{ padding: 20 }}>
+            <div style={{ display:'grid', gap: 12 }}>
+              <div className="auth-metric">
+                <strong>Clearer review flow</strong>
+                <span>Less clutter, faster decisions, and a faster path from login to dashboard.</span>
+              </div>
+              <div className="auth-metric">
+                <strong>Built for trading context</strong>
+                <span>Trade notes, emotion tags, holdings sync, and AI prompts all stay in one place.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Card */}
-        <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:24, padding:'34px 30px', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)' }}>
+        <div className="auth-card">
+          <div style={{ textAlign:'center', marginBottom:32 }}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:10, marginBottom:10 }}>
+              <div style={{ width:38, height:38, background:'linear-gradient(135deg, #5B2EFF, #9B59B6)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📊</div>
+              <span style={{ fontSize:28, fontWeight:900, letterSpacing:'-0.04em', color:'#fff' }}>
+                Trade<span style={{ color:T.p }}>Daddy</span>
+              </span>
+            </div>
+            <p style={{ margin:0, fontSize:14, color:T.m }}>
+              {mode === 'login' ? 'Welcome back. Sign in to your account.' : 'Create your account and start journaling.'}
+            </p>
+          </div>
 
-          {/* Mode toggle */}
-          <div style={{ display:'flex', background:'rgba(255,255,255,0.04)', borderRadius:14, padding:4, marginBottom:28 }}>
+          <div className="auth-toggle" style={{ marginBottom:28 }}>
             {[['login','Sign In'],['signup','Sign Up']].map(([m, label]) => (
-              <button key={m} onClick={() => switchMode(m)} style={{ flex:1, padding:'11px 0', border:'none', cursor:'pointer', borderRadius:11, fontWeight:700, fontSize:14, fontFamily:T.font, transition:'all 0.22s', background:mode===m?T.p:'transparent', color:mode===m?'#fff':T.m, boxShadow:mode===m?'0 2px 12px rgba(91,46,255,0.4)':'none' }}>
+              <button key={m} type="button" onClick={() => switchMode(m)} className={mode===m ? 'is-active' : ''}>
                 {label}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          <form onSubmit={handleSubmit} className="auth-form">
             {mode === 'signup' && (
               <Field label="Full Name" type="text" value={form.name} onChange={v=>set('name',v)} placeholder="Your full name" autoComplete="name"/>
             )}
@@ -119,27 +141,26 @@ export default function Auth() {
               </div>
             )}
 
-            <button type="submit" disabled={loading} style={{ marginTop:4, padding:'14px 0', border:'none', borderRadius:13, background:loading?'rgba(91,46,255,0.5)':T.p, color:'#fff', fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', fontFamily:T.font, transition:'all 0.2s', boxShadow:loading?'none':'0 4px 18px rgba(91,46,255,0.4)', letterSpacing:'0.01em' }}>
+            <button type="submit" disabled={loading} className="auth-button" style={{ marginTop:4, opacity: loading ? 0.75 : 1 }}>
               {loading
                 ? (mode === 'login' ? 'Signing in…' : 'Creating account…')
                 : (mode === 'login' ? 'Sign In →' : 'Create Account →')}
             </button>
           </form>
 
-          {/* Trust badges */}
-          <div style={{ marginTop:24, display:'flex', justifyContent:'center', gap:12, flexWrap:'wrap' }}>
+          <div style={{ marginTop:24 }} className="auth-meta">
             {[
               { icon:'🔒', text:'D1 Database' },
               { icon:'☁', text:'Cloudflare Workers' },
               { icon:'🔑', text:'JWT Auth' },
             ].map(({ icon, text }) => (
-              <div key={text} style={{ display:'flex', alignItems:'center', gap:5, padding:'4px 10px', background:'rgba(255,255,255,0.04)', border:`1px solid ${T.border}`, borderRadius:999, fontSize:11, color:T.d }}>
+              <div key={text} className="auth-pill">
                 {icon} {text}
               </div>
             ))}
           </div>
 
-          <p style={{ textAlign:'center', marginTop:16, fontSize:11, color:T.d, lineHeight:1.5 }}>
+          <p className="auth-footer">
             Your data is isolated — every account has its own portfolio, trades, and broker credentials.
           </p>
         </div>
