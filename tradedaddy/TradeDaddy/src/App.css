@@ -57,25 +57,32 @@ html {
   position: relative;
 }
 
-.cta-primary {
+.cta-primary,
+.landing-start-btn {
   border: none;
   border-radius: 16px;
-  padding: 14px 28px;
+  padding: 16px 40px;
   background: linear-gradient(135deg, #5b2eff, #9b59b6);
   color: #fff;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   box-shadow: 0 14px 34px rgba(91, 46, 255, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-family: inherit;
 }
 
-.cta-primary:hover {
+.cta-primary:hover,
+.landing-start-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 50px rgba(91, 46, 255, 0.45);
+  background: linear-gradient(135deg, #6d3fff, #a66cc0);
+}
+
+.cta-primary:active,
+.landing-start-btn:active {
   transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(91, 46, 255, 0.36);
-}
-
-.cta-primary-center {
-  margin-top: 8px;
+  box-shadow: 0 12px 30px rgba(91, 46, 255, 0.3);
 }
 
 .section-shell {

@@ -59,7 +59,7 @@ function Landingpage() {
         <section id="home" className="landing-hero" style={{ scrollMarginTop: '160px', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px 20px' }}>
           <div style={{ maxWidth: '720px' }}>
             <h1 style={{ margin: '0 0 24px', fontSize: 'clamp(52px, 8vw, 88px)', fontWeight: 800, letterSpacing: '-0.05em', color: '#fff', lineHeight: 1.1 }}>Welcome to TradeDaddy</h1>
-            <button className="cta-primary" onClick={goToAuth} style={{ marginTop: '24px', padding: '16px 40px', fontSize: '18px' }}>Start</button>
+            <button className="landing-start-btn" onClick={goToAuth}>Start</button>
           </div>
         </section>
 

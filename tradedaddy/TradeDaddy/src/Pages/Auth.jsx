@@ -80,34 +80,7 @@ export default function Auth() {
       <div style={{ position:'absolute', bottom:'5%', right:'10%', width:400, height:400, background:'radial-gradient(circle, rgba(46,204,138,0.05) 0%, transparent 70%)', borderRadius:'50%', pointerEvents:'none' }}/>
 
       <div className="auth-grid">
-        <div className="auth-copy">
-          <span className="section-kicker">Secure sign in</span>
-          <h1>{mode === 'login' ? 'Welcome back to TradeDaddy' : 'Create your TradeDaddy account'}</h1>
-          <p>
-            Keep trades, holdings, and broker connections isolated per user while getting a cleaner review flow for journaling and performance analysis.
-          </p>
-
-          <div className="auth-meta">
-            <div className="auth-pill">🔒 Multi-user safe</div>
-            <div className="auth-pill">☁ Cloudflare Workers</div>
-            <div className="auth-pill">📈 Journaling + analytics</div>
-          </div>
-
-          <div className="auth-card" style={{ padding: 20 }}>
-            <div style={{ display:'grid', gap: 12 }}>
-              <div className="auth-metric">
-                <strong>Clearer review flow</strong>
-                <span>Less clutter, faster decisions, and a faster path from login to dashboard.</span>
-              </div>
-              <div className="auth-metric">
-                <strong>Built for trading context</strong>
-                <span>Trade notes, emotion tags, holdings sync, and AI prompts all stay in one place.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="auth-card">
+        <div className="auth-card" style={{ margin: '0 auto', maxWidth: '480px' }}>
           <div style={{ textAlign:'center', marginBottom:32 }}>
             <div style={{ display:'inline-flex', alignItems:'center', gap:10, marginBottom:10 }}>
               <div style={{ width:38, height:38, background:'linear-gradient(135deg, #5B2EFF, #9B59B6)', borderRadius:12, display:'grid', placeItems:'center', fontSize:12, fontWeight:800, letterSpacing:'0.08em', color:'#fff' }}>TD</div>
@@ -148,21 +121,7 @@ export default function Auth() {
             </button>
           </form>
 
-          <div style={{ marginTop:24 }} className="auth-meta">
-            {[
-              { icon:'DB', text:'D1 Database' },
-              { icon:'WK', text:'Cloudflare Workers' },
-              { icon:'JW', text:'JWT Auth' },
-            ].map(({ icon, text }) => (
-              <div key={text} className="auth-pill">
-                {icon} {text}
-              </div>
-            ))}
-          </div>
 
-          <p className="auth-footer">
-            Your data is isolated — every account has its own portfolio, trades, and broker credentials.
-          </p>
         </div>
       </div>
     </div>
