@@ -9,7 +9,7 @@ import {
   getTrades, createTrade, updateTrade, deleteTrade,
   getHoldings, createHolding, deleteHolding,
   uploadImage, getQuote,
-  groqChat, getMe, auth, logoutUser,
+  nimChat, getMe, auth, logoutUser,
 } from '../utils/api'
 import Scanner from './Scanner'
 import ImportTrades from './ImportTrades'
@@ -306,7 +306,7 @@ function DashboardHome({ trades, holdings, user }) {
           </div>
         </div>
 
-        <div style={{ display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:12 }}>
+        <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12 }}>
           <div style={{ padding:'14px 16px',borderRadius:16,background:'rgba(255,255,255,0.04)',border:`1px solid ${T.border}` }}>
             <div style={{ fontSize:11,color:T.d,textTransform:'uppercase',letterSpacing:'0.07em',fontWeight:700 }}>Portfolio Value</div>
             <div style={{ marginTop:8,fontSize:22,fontWeight:800,letterSpacing:'-0.03em' }}>{totalVal>0?fmtInr(totalVal,true):'—'}</div>
@@ -330,7 +330,7 @@ function DashboardHome({ trades, holdings, user }) {
         </div>
       </div>
 
-      <div style={{ display:'grid',gridTemplateColumns:'1fr 320px',gap:14,alignItems:'stretch' }}>
+      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:14,alignItems:'stretch' }}>
         <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:18,padding:'18px 20px' }}>
           <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14 }}>
             <div>
@@ -352,7 +352,7 @@ function DashboardHome({ trades, holdings, user }) {
         </div>
       </div>
 
-      <div style={{ display:'grid',gridTemplateColumns:'1.1fr 0.9fr',gap:14,alignItems:'stretch' }}>
+      <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:14,alignItems:'stretch' }}>
         {trades.length>0 && (
           <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:18,padding:'18px 20px' }}>
             <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14 }}>
@@ -561,7 +561,7 @@ function HoldingsPage({ holdings, onRefresh }) {
           <div style={{ fontSize:12,color:T.d,marginTop:4 }}>Add manually or import from CSV above</div>
         </div>
       ) : (
-        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:'hidden' }}>
+        <div style={{ background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:'hidden',overflowX:'auto' }}>
           <table style={{ width:'100%',borderCollapse:'collapse' }}>
             <thead>
               <tr style={{ borderBottom:`1px solid ${T.border}` }}>
@@ -595,7 +595,7 @@ function HoldingsPage({ holdings, onRefresh }) {
   )
 }
 
-/* ── AI CHAT (Groq — real portfolio data) ── */
+/* ── AI CHAT (NVIDIA NIM — real portfolio data) ── */
 function ChatPage({ trades, holdings }) {
   const [messages,setMessages]=useState([{
     role:'assistant',
@@ -660,7 +660,7 @@ Repeat loss symbols: ${[...new Set(trades.filter(t=>t.pnl<0).map(t=>t.symbol))].
 4. Connect macro events to the specific holdings shown with live prices
 5. Give actionable guidance with price levels, not vague advice
 6. Be direct and analytical — this is a professional trading context`
-      const reply = await groqChat(
+      const reply = await nimChat(
         [...messages.map(m=>({role:m.role,content:m.text})), {role:'user',content:text}],
         systemContext
       )
@@ -1368,9 +1368,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={{ display:'flex',minHeight:'100vh',background:T.bg,fontFamily:T.font,color:'#fff' }}>
+    <div className="dashboard-shell" style={{ display:'flex',minHeight:'100vh',background:T.bg,fontFamily:T.font,color:'#fff' }}>
       {/* Sidebar */}
-      <aside style={{ width:sidebar?218:60,flexShrink:0,background:'rgba(255,255,255,0.018)',borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',padding:'22px 0',transition:'width 0.28s cubic-bezier(.4,0,.2,1)',overflow:'hidden',position:'sticky',top:0,height:'100vh' }}>
+      <aside className="dashboard-sidebar" style={{ width:sidebar?218:60,flexShrink:0,background:'rgba(255,255,255,0.018)',borderRight:`1px solid ${T.border}`,display:'flex',flexDirection:'column',padding:'22px 0',transition:'width 0.28s cubic-bezier(.4,0,.2,1)',overflow:'hidden',position:'sticky',top:0,height:'100vh' }}>
         {/* Logo */}
         <div style={{ padding:'0 16px 22px',display:'flex',alignItems:'center',gap:10,justifyContent:sidebar?'flex-start':'center' }}>
           <div style={{ width:32,height:32,background:`linear-gradient(135deg,${T.p},#9B59B6)`,borderRadius:10,display:'grid',placeItems:'center',fontSize:11,fontWeight:800,letterSpacing:'0.08em',flexShrink:0,color:'#fff' }}>TD</div>
@@ -1416,7 +1416,7 @@ export default function Dashboard() {
       </aside>
 
       {/* Main */}
-      <main style={{ flex:1,overflow:'auto',padding:'22px 24px 28px',minWidth:0 }}>
+      <main className="dashboard-content" style={{ flex:1,overflow:'auto',padding:'22px 24px 28px',minWidth:0 }}>
         <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',gap:14,flexWrap:'wrap',marginBottom:16 }}>
           <HeaderMark label={(PAGE_TITLES[page] || 'OV').slice(0,2).toUpperCase()} title={PAGE_TITLES[page] || 'Overview'} subtitle="Workspace" />
           <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>

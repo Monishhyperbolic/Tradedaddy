@@ -95,8 +95,8 @@ export const analyzeNews = (headline, desc)       => req('/api/news/analyze', { 
 /* ── Economic Calendar ── */
 export const getCalendar = () => req('/api/calendar')
 
-/* ── Groq AI (via Worker proxy — Groq llama-3.3-70b) ── */
-export const groqChat = async (messages, system) => {
+/* ── NVIDIA NIM AI (via Worker proxy) ── */
+export const nimChat = async (messages, system) => {
   const built = []
   if (system) built.push({ role: 'system', content: system })
   if (typeof messages === 'string') built.push({ role: 'user', content: messages })
@@ -104,7 +104,11 @@ export const groqChat = async (messages, system) => {
   const res = await fetch(`${BASE}/api/ai`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: built }),
+    body: JSON.stringify({
+      provider: 'nvidia-nim',
+      model: 'meta/llama-3.1-70b-instruct',
+      messages: built,
+    }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))

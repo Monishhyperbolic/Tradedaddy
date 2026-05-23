@@ -1,10 +1,10 @@
 /**
  * SectorAnalysis.jsx — Indian Sector Screener
  * Uses Yahoo Finance via Worker proxy
- * Groq for AI analysis
+ * NVIDIA NIM for AI analysis
  */
 import { useState, useEffect, useCallback } from 'react'
-import { getQuote, groqChat } from '../utils/api'
+import { getQuote, nimChat } from '../utils/api'
 
 const C = { s:'rgba(255,255,255,0.03)', b:'rgba(255,255,255,0.07)', p:'#5227FF', g:'#34C77B', r:'#FF5C5C', a:'#F59E0B', m:'rgba(255,255,255,0.4)', f:'rgba(255,255,255,0.06)' }
 
@@ -35,14 +35,14 @@ const SECTORS = [
     stocks:[{s:'TATASTEEL.NS',n:'Tata Steel'},{s:'JSWSTEEL.NS',n:'JSW Steel'},{s:'HINDALCO.NS',n:'Hindalco'},{s:'VEDL.NS',n:'Vedanta'},{s:'SAIL.NS',n:'SAIL'},{s:'NMDC.NS',n:'NMDC'}] },
 ]
 
-// Groq via Worker proxy (no CORS issues)
-async function groqAnalyze(prompt) {
+// NVIDIA NIM via Worker proxy (no CORS issues)
+async function nimAnalyze(prompt) {
   try {
     const fullPrompt = `<s>[INST] You are an expert Indian stock market analyst. ${prompt} Give a concise 3-sentence analysis with a specific BUY/HOLD/AVOID recommendation. [/INST]`
-    return await groqChat(fullPrompt)
+    return await nimChat(fullPrompt)
   } catch(e) {
     if (e.message.includes('loading')) return '⏳ ' + e.message
-    console.warn('Groq sector analysis failed', e)
+    console.warn('NVIDIA NIM sector analysis failed', e)
     return 'AI analysis temporarily unavailable. Please try again later.'
   }
 }
@@ -118,7 +118,7 @@ export default function SectorAnalysis() {
       return `${sec?.label||d.id}: ${d.avg>=0?'+':''}${d.avg.toFixed(2)}%`
     }).join('; ')
     const prompt = `Indian stock market sector performance today: ${summary}. Which sectors should an Indian retail investor focus on today? What is the overall market sentiment?`
-    const text = await groqAnalyze(prompt)
+    const text = await nimAnalyze(prompt)
     setMarketSummary(text)
     setAnalyzing(false)
   }, [])
@@ -205,7 +205,7 @@ function SectorCardWrapper({ sector, onAvgUpdate }) {
     if (analysis || analyzing) return
     setAnalyzing(true)
     const sum = valid.map(q=>`${q.displayName}:${q.changePct>=0?'+':''}${q.changePct?.toFixed(2)}%`).join(', ')
-    const text = await groqAnalyze(`Analyze Indian ${sector.label} sector. Stocks: ${sum}. Avg change: ${avg>=0?'+':''}${avg.toFixed(2)}%. Should investors BUY, HOLD or AVOID? Give specific recommendation.`)
+    const text = await nimAnalyze(`Analyze Indian ${sector.label} sector. Stocks: ${sum}. Avg change: ${avg>=0?'+':''}${avg.toFixed(2)}%. Should investors BUY, HOLD or AVOID? Give specific recommendation.`)
     setAnalysis(text); setExpanded(true); setAnalyzing(false)
   }, [analysis, analyzing, avg, valid, sector.label])
 

@@ -63,3 +63,44 @@ select {
 button {
   cursor: pointer;
 }
+
+.dashboard-shell {
+  min-height: 100vh;
+}
+
+.dashboard-content {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-shell {
+    flex-direction: column;
+  }
+
+  .dashboard-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+    top: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dashboard-content {
+    padding: 18px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-content {
+    padding: 14px !important;
+  }
+
+  .dashboard-content h1 {
+    font-size: clamp(24px, 7vw, 32px) !important;
+  }
+
+  .dashboard-content table {
+    min-width: 640px;
+  }
+}

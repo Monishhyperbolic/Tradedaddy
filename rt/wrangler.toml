@@ -1,0 +1,42 @@
+name = "tradedaddy-api"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database ──────────────────────────────────────────────────
+# Run: wrangler d1 create tradedaddy-db
+# Then paste the database_id below
+[[d1_databases]]
+binding = "DB"
+database_name = "tradedaddy-db"
+database_id = "a6bfb443-c22d-4dec-b79b-5b9444c3a1da"
+
+# ── R2 Object Storage (images) ───────────────────────────────────
+# Run: wrangler r2 bucket create tradedaddy-uploads
+# Then enable R2 public access in Cloudflare dashboard → R2 → Settings → Public Access
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "tradedaddy-uploads"
+# Set this to your R2 public URL after enabling public access:
+# e.g. https://pub-xxxx.r2.dev  OR  https://uploads.yourdomain.com
+
+# ── KV (scanner cache) ───────────────────────────────────────────
+# Run: wrangler kv:namespace create SCANNER_CACHE
+[[kv_namespaces]]
+binding = "CACHE"
+id = "40f6fadba99d45c39664aa5eb5ebad49"
+
+[vars]
+ENVIRONMENT = "production"
+# Set your R2 public base URL here (via: wrangler secret put R2_PUBLIC_URL)
+R2_PUBLIC_URL = "https://pub-f04874666f89460ea8aaf0df3e03b2e8.r2.dev"
+
+[dev]
+port = 8787
+
+# ── Deploy commands ───────────────────────────────────────────────
+# 1. wrangler d1 create tradedaddy-db
+# 2. wrangler d1 execute tradedaddy-db --file=./schema.sql
+# 3. wrangler r2 bucket create tradedaddy-uploads
+# 4. wrangler kv:namespace create SCANNER_CACHE
+# 5. Update IDs above, then: wrangler deploy
