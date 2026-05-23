@@ -114,7 +114,7 @@ export default function Auth() {
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="auth-button" style={{ marginTop:4, opacity: loading ? 0.75 : 1 }}>
+            <button type="submit" disabled={loading} className="auth-button landing-start-btn" style={{ width:'100%', marginTop:4, opacity: loading ? 0.75 : 1 }}>
               {loading
                 ? (mode === 'login' ? 'Signing in…' : 'Creating account…')
                 : (mode === 'login' ? 'Sign In →' : 'Create Account →')}
