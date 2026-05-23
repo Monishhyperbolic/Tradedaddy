@@ -171,6 +171,62 @@ html {
   margin: 0 auto;
 }
 
+/* Auth form styling */
+.auth-toggle {
+  display: flex;
+  gap: 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+}
+
+.auth-toggle button {
+  flex: 1;
+  padding: 10px 16px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.auth-toggle button.is-active {
+  background: #ffffff;
+  color: #000000;
+}
+
+.auth-button {
+  position: relative;
+  border: none;
+  border-radius: 20px;
+  padding: 18px 56px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 32px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  cursor: pointer;
+  font-family: inherit;
+  overflow: hidden;
+}
+
+.auth-button:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 16px 48px rgba(255, 255, 255, 0.3);
+  background: #f5f5f5;
+}
+
+.auth-button:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+}
+
 @media (max-width: 768px) {
   .landing-hero {
     min-height: 100vh;
