@@ -1417,9 +1417,10 @@ export default function Dashboard() {
 
       {/* Main */}
       <main className="dashboard-content" style={{ flex:1,overflow:'auto',padding:'22px 24px 28px',minWidth:0 }}>
-        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',gap:14,flexWrap:'wrap',marginBottom:16 }}>
+        <div className="dashboard-page-frame" style={{ width:'100%',maxWidth:1440,margin:'0 auto' }}>
+        <div className="dashboard-topbar" style={{ display:'flex',justifyContent:'space-between',alignItems:'center',gap:14,flexWrap:'wrap',marginBottom:16 }}>
           <HeaderMark label={(PAGE_TITLES[page] || 'OV').slice(0,2).toUpperCase()} title={PAGE_TITLES[page] || 'Overview'} subtitle="Workspace" />
-          <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
+          <div className="dashboard-topbar-actions" style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
             <div style={{ display:'flex',alignItems:'center',gap:8,padding:'9px 12px',background:'rgba(46,204,138,0.09)',border:'1px solid rgba(46,204,138,0.18)',borderRadius:12,fontSize:12 }}>
               <span style={{ width:7,height:7,borderRadius:'50%',background:T.g,display:'inline-block' }}/>
               Workspace ready
@@ -1435,6 +1436,7 @@ export default function Dashboard() {
             <div style={{ fontSize:14 }}>Loading your portfolio…</div>
           </div>
         ) : pages[page]}
+        </div>
       </main>
     </div>
   )
