@@ -28,7 +28,7 @@ const ProfileCardComponent = ({
   enableMobileTilt = false,
   mobileTiltSensitivity = 5,
   miniAvatarUrl,
-  name = 'Monish Patil and Taranjeet Singh',
+  name = 'Monish Patil',
   title = 'Full Stack Developer',
   handle = '',
   status = 'Online',
