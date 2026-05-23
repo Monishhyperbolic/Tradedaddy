@@ -54,7 +54,7 @@ html {
 }
 
 .landing-hero {
-  min-height: 72vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
 }
@@ -70,22 +70,31 @@ html {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 18px;
-  padding: 40px 20px 20px;
+  gap: 22px;
+  padding: 40px 20px;
 }
 
-.hero-copy-centered .eyebrow {
-  display: inline-flex;
+.landing-title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 6px;
+  color: #fff;
+  font-size: clamp(48px, 7vw, 86px);
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+.landing-title span:nth-child(2) {
+  opacity: 0.82;
+  font-size: 0.62em;
+}
+
+.landing-title span:nth-child(1),
+.landing-title span:nth-child(3) {
+  text-shadow: 0 12px 40px rgba(91, 46, 255, 0.14);
 }
 
 .cta-primary {
@@ -110,14 +119,18 @@ html {
 }
 
 .section-shell {
-  padding: 36px 20px;
+  padding: 56px 20px;
 }
 
 .section-shell-centered {
-  min-height: 72vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.landing-section-spacer {
+  scroll-margin-top: 0;
 }
 
 .section-center-frame {
@@ -138,17 +151,25 @@ html {
   justify-content: center;
 }
 
+.about-card-wrap :is(.pc-card-wrapper, .pc-card-shell) {
+  margin: 0 auto;
+}
+
 @media (max-width: 768px) {
   .landing-hero {
-    min-height: 62vh;
+    min-height: 100vh;
   }
 
   .hero-copy-centered {
-    padding: 24px 14px 14px;
-    gap: 14px;
+    padding: 18px 14px;
+    gap: 16px;
   }
 
   .section-shell-centered {
-    min-height: auto;
+    min-height: 100vh;
+  }
+
+  .landing-title {
+    font-size: clamp(40px, 12vw, 64px);
   }
 }
