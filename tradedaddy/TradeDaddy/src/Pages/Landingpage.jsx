@@ -4,7 +4,7 @@ import GooeyNav from '../components/navbar/GooeyNav';
 import ProfileCard from '../components/profilecard/ProfileCard';
 import MagicBento from '../components/features/MagicBento';
 import Footer from '../components/Footer';
-import './app.css';
+import "../App.css";
 function Landingpage() {
   const navigate = useNavigate();
 
