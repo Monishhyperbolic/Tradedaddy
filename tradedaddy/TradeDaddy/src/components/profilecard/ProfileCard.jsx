@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import './ProfileCard.css';
-
+import pfp from '../pfp.png';
 const DEFAULT_INNER_GRADIENT = 'linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)';
 
 const ANIMATION_CONFIG = {
@@ -15,8 +15,8 @@ const round = (v, precision = 3) => parseFloat(v.toFixed(precision));
 const adjust = (v, fMin, fMax, tMin, tMax) => round(tMin + ((tMax - tMin) * (v - fMin)) / (fMax - fMin));
 
 const ProfileCardComponent = ({
-  avatarUrl = 'tradedaddy/TradeDaddy/src/components/pfp.png',
-  iconUrl = 'tradedaddy/TradeDaddy/src/components/pfp.png',
+  avatarUrl = pfp,
+  iconUrl = pfp,
   grainUrl = '<Placeholder for grain URL>',
   innerGradient,
   // Removed glow-related props (no longer used)

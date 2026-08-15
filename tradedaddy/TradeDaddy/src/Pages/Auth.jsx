@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signup, login, auth, logoutUser } from '../utils/api'
+import "../App.css";
 
 const T = {
   bg: '#07050e', card: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.08)',
