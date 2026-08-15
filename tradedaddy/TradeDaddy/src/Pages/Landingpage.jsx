@@ -4,7 +4,7 @@ import GooeyNav from '../components/navbar/GooeyNav';
 import ProfileCard from '../components/profilecard/ProfileCard';
 import MagicBento from '../components/features/MagicBento';
 import Footer from '../components/Footer';
-
+import './app.css';
 function Landingpage() {
   const navigate = useNavigate();
 
@@ -72,7 +72,7 @@ function Landingpage() {
         <section id="about" className="section-shell section-shell-centered landing-section-spacer" style={{ scrollMarginTop: '1px' }}>
           <div className="about-grid about-grid-centered">
             <div className="about-card-wrap">
-              <ProfileCard name="Made by Monish Aoptil" />
+              <ProfileCard name="Made by Monish patil" />
             </div>
           </div>
         </section>
